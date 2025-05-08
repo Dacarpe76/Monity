@@ -26,46 +26,41 @@ class DatabaseHelper {
           id: '1',
           name: 'Bolsillo',
           balance: 0.0,
-          limitSpend: 150.0,
           monthlyLimit: 300.0,
-          transactions: [], // Lista vacía de transacciones.
-          order: 0, // Orden inicial.
+          limitSpend: 150.0,
+          order: 0,
         ),
         Account(
           id: '2',
           name: 'Diario',
           balance: 0.0,
-          limitSpend: 700.0,
           monthlyLimit: 1000.0,
-          transactions: [], // Lista vacía de transacciones.
-          order: 1, // Orden inicial.
+          limitSpend: 700.0,
+          order: 1,
         ),
         Account(
           id: '3',
           name: 'Imprevistos',
           balance: 0.0,
-          limitSpend: 500.0,
           monthlyLimit: 3000.0,
-          transactions: [], // Lista vacía de transacciones.
-          order: 2, // Orden inicial.
+          limitSpend: 500.0,
+          order: 2,
         ),
         Account(
           id: '4',
           name: 'Emergencias',
           balance: 0.0,
-          limitSpend: 300.0,
           monthlyLimit: 10000.0,
-          transactions: [], // Lista vacía de transacciones.
-          order: 3, // Orden inicial.
+          limitSpend: 300.0,
+          order: 3,
         ),
         Account(
           id: '5',
           name: 'Ahorro',
           balance: 0.0,
-          limitSpend: 1.0,
           monthlyLimit: 1000000.0,
-          transactions: [], // Lista vacía de transacciones.
-          order: 4, // Orden inicial.
+          limitSpend: 1.0,
+          order: 4,
         ),
       ];
 

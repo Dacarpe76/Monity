@@ -84,7 +84,6 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
           balance: _initialBalance, // Este es el saldo inicial
           limitSpend: _limitSpend,
           monthlyLimit: _monthlyLimit,
-          transactions: [], // Nueva cuenta empieza sin transacciones
           order: _order,
         );
       }

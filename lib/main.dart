@@ -5,6 +5,8 @@ import 'models/account.dart';
 import 'models/transaction.dart';
 import 'models/category.dart';
 import 'services/database_helper.dart';
+import 'package:provider/provider.dart';
+import 'package:monity/providers/currency_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +28,12 @@ void main() async {
   await dbHelper.initializeDefaultAccounts();
   await dbHelper.initializeDefaultCategories();
 
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => CurrencyProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
