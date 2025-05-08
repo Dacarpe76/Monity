@@ -18,12 +18,12 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
     };
     return Transaction(
       id: fields[0] as String,
-      amount: fields[1] as double,
-      date: fields[2] as DateTime,
-      category: fields[3] as String,
-      description: fields[4] as String,
+      accountId: fields[1] as String,
+      description: fields[2] as String,
+      amount: fields[3] as double,
+      date: fields[4] as DateTime,
       isIncome: fields[5] as bool,
-      accountId: fields[6] as String,
+      category: fields[6] as String,
       originalCategory: fields[7] as String?,
     );
   }
@@ -35,17 +35,17 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.amount)
+      ..write(obj.accountId)
       ..writeByte(2)
-      ..write(obj.date)
-      ..writeByte(3)
-      ..write(obj.category)
-      ..writeByte(4)
       ..write(obj.description)
+      ..writeByte(3)
+      ..write(obj.amount)
+      ..writeByte(4)
+      ..write(obj.date)
       ..writeByte(5)
       ..write(obj.isIncome)
       ..writeByte(6)
-      ..write(obj.accountId)
+      ..write(obj.category)
       ..writeByte(7)
       ..write(obj.originalCategory);
   }

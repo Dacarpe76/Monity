@@ -142,21 +142,6 @@ class DatabaseHelper {
       final totalMonthlyIncomes =
           monthlyIncomes.fold(0.0, (sum, t) => sum + t.amount);
 
-      // Mostrar los valores relevantes para depuración
-      print('--- Depuración de ingreso acumulado ---');
-      print('Fecha actual: $now');
-      print('Primer día del mes: $firstDayOfMonth');
-      print('Último día del mes: $lastDayOfMonth');
-      print('Transacciones de ingreso del mes:');
-      for (final income in monthlyIncomes) {
-        print(
-            'ID: ${income.id}, Monto: \$${income.amount}, Fecha: ${income.date}');
-      }
-      print('Total de ingresos acumulados del mes: \$$totalMonthlyIncomes');
-      print('Monto de la nueva transacción: \$${transaction.amount}');
-      print('Saldo actual de la cuenta: \$${account.balance}');
-      print('Límite mensual de la cuenta: \$${account.monthlyLimit}');
-
       // Verificar si el acumulado de ingresos supera el monthlyLimit
       final newMonthlyIncomes = totalMonthlyIncomes + transaction.amount;
       if (newMonthlyIncomes > account.monthlyLimit) {
@@ -296,8 +281,7 @@ class DatabaseHelper {
 
     // Si aún queda excedente después de recorrer todas las cuentas, mostrar un mensaje
     if (excessAmount > 0 && currentAccount.name != 'Ahorro') {
-      print(
-          'Advertencia: No se pudo distribuir completamente el excedente. Excedente restante: $excessAmount');
+      //print('Advertencia: No se pudo distribuir completamente el excedente. Excedente restante: $excessAmount');
     }
   }
 
@@ -494,8 +478,7 @@ class DatabaseHelper {
 
     // Si aún queda déficit después de recorrer todas las cuentas, mostrar un mensaje.
     if (deficit > 0) {
-      print(
-          'Advertencia: No se pudo cubrir completamente el gasto. Déficit restante: $deficit');
+      //print('Advertencia: No se pudo cubrir completamente el gasto. Déficit restante: $deficit');
     }
   }
 

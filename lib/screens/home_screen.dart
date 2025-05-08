@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../widgets/account_card.dart';
@@ -32,7 +34,7 @@ class HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () async {
               await dbHelper.clearAllTransactions(); // Vaciar transacciones
-              if (!mounted) return; // Verificar si el widget está montado{
+              if (!mounted) return; // Verificar si el widget está montado
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                     content:

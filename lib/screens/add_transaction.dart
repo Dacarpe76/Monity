@@ -41,9 +41,9 @@ class AddTransactionScreenState extends State<AddTransactionScreen> {
         _selectedCategory =
             _categories.isNotEmpty ? _categories.first : 'Sin categoría';
       });
-      print("Categorías cargadas: $_categories");
+      //print("Categorías cargadas: $_categories");
     } catch (e) {
-      print("Error al cargar las categorías: $e");
+      //print("Error al cargar las categorías: $e");
     }
   }
 

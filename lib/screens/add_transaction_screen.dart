@@ -49,7 +49,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> {
         }
       });
     } catch (e) {
-      print("Error al cargar las cuentas: $e");
+      //print("Error al cargar las cuentas: $e");
     }
   }
 
@@ -65,7 +65,7 @@ class AddTransactionScreenState extends State<AddTransactionScreen> {
             _categories.isNotEmpty ? _categories.first : 'Sin categoría';
       });
     } catch (e) {
-      print("Error al cargar las categorías: $e");
+      //print("Error al cargar las categorías: $e");
     }
   }
 

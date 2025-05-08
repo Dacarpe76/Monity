@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'transaction.dart';
+import 'transaction.dart'; // Asegúrate de que este import sea correcto y Transaction esté definido
 
 part 'account.g.dart';
 
@@ -15,12 +15,12 @@ class Account extends HiveObject {
   double balance;
 
   @HiveField(3)
-  final double limitSpend;
+  final double limitSpend; // Límite de gasto mensual
 
   @HiveField(4)
-  final double monthlyLimit;
+  final double monthlyLimit; // Límite de ingreso mensual (según tu aclaración)
 
-  @HiveField(5) // Asegúrate de que esta línea exista.
+  @HiveField(5)
   final List<Transaction> transactions;
 
   @HiveField(6)
@@ -32,10 +32,10 @@ class Account extends HiveObject {
     required this.balance,
     required this.limitSpend,
     required this.monthlyLimit,
-    this.transactions = const [], // Valor predeterminado.
+    this.transactions = const [],
     this.order = 0,
   });
-  // Método copyWith
+
   Account copyWith({
     String? id,
     String? name,
@@ -63,6 +63,24 @@ class Account extends HiveObject {
     } else {
       balance -= transaction.amount;
     }
+    // Considera llamar a save() si quieres persistir este cambio inmediatamente
+    // si Account es un HiveObject y está en una caja abierta.
+    // Ejemplo: if (isInBox) { save(); }
+  }
+
+  // Calcula el gasto total para esta cuenta en un mes y año específicos.
+  // Asume que las transacciones de gasto tienen `isIncome == false`.
+  // Asume que `transaction.amount` es siempre un valor positivo.
+  double getMonthlySpending(int month, int year) {
+    double spending = 0;
+    for (var transaction in transactions) {
+      if (!transaction.isIncome &&
+          transaction.date.month == month &&
+          transaction.date.year == year) {
+        spending += transaction.amount;
+      }
+    }
+    return spending;
   }
 
   Map<String, dynamic> toMap() {
@@ -72,7 +90,11 @@ class Account extends HiveObject {
       'balance': balance,
       'limitSpend': limitSpend,
       'monthlyLimit': monthlyLimit,
-      'order': order, // Incluir el campo 'order' en el mapa.
+      'order': order,
+      // Nota: 'transactions' no se incluye aquí, generalmente se manejan por separado
+      // o se serializan de forma diferente si es necesario para toMap/fromMap.
+      // Si necesitas serializar/deserializar transacciones con este método,
+      // deberás añadir lógica para convertir List<Transaction> a List<Map> y viceversa.
     };
   }
 
@@ -83,7 +105,15 @@ class Account extends HiveObject {
       balance: map['balance'],
       limitSpend: map['limitSpend'],
       monthlyLimit: map['monthlyLimit'],
-      order: map['order'], // Leer el campo 'order' del mapa.
+      order: map['order'],
+      // Nota: 'transactions' no se carga desde el mapa aquí.
+      // Si necesitas esto, deberás añadir lógica para convertir List<Map> a List<Transaction>.
+      // Por lo general, con Hive, las relaciones se manejan a través de HiveList o referencias.
+      transactions: (map['transactions'] as List<dynamic>?)
+              ?.map((t) => Transaction.fromMap(t as Map<String,
+                  dynamic>)) // Asumiendo que Transaction tiene fromMap
+              .toList() ??
+          const [],
     );
   }
 }
