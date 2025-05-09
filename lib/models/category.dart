@@ -5,7 +5,7 @@ part 'category.g.dart';
 @HiveType(typeId: 2)
 class Category extends HiveObject {
   @HiveField(0)
-  final int? id;
+  final String id;
 
   @HiveField(1)
   final String name;
@@ -14,7 +14,7 @@ class Category extends HiveObject {
   final bool isIncome;
 
   Category({
-    this.id,
+    required this.id,
     required this.name,
     required this.isIncome,
   });

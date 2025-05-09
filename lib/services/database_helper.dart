@@ -1,15 +1,24 @@
 import 'package:hive/hive.dart';
+import 'package:logging/logging.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 
+import 'package:uuid/uuid.dart';
+
 class DatabaseHelper {
+  static final _log = Logger('DatabaseHelper');
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
 
   DatabaseHelper._internal();
 
-  // Métodos para abrir cajas de Hive
+  // Modificar los getters para usar Hive.box en lugar de openBox
+  Box<Account> get accountsBoxSync => Hive.box<Account>('accounts');
+  Box<Transaction> get transactionsBoxSync =>
+      Hive.box<Transaction>('transactions');
+  Box<Category> get categoriesBoxSync => Hive.box<Category>('categories');
+
   Future<Box<Account>> get accountsBox async =>
       await Hive.openBox<Account>('accounts');
   Future<Box<Transaction>> get transactionsBox async =>
@@ -19,95 +28,147 @@ class DatabaseHelper {
 
   // Método para inicializar cuentas predeterminadas
   Future<void> initializeDefaultAccounts() async {
-    final box = await accountsBox;
+    final box = accountsBoxSync;
+    _log.info('Iniciando creación de cuentas predeterminadas...');
+
     if (box.isEmpty) {
       final defaultAccounts = [
         Account(
-          id: '1',
+          id: const Uuid().v4(),
           name: 'Bolsillo',
           balance: 0.0,
-          monthlyLimit: 300.0,
-          limitSpend: 150.0,
           order: 0,
+          monthlyLimit: 300.0, // Límite de ingreso
+          limitSpend: 200.0, // Límite de gasto
         ),
         Account(
-          id: '2',
+          id: const Uuid().v4(),
           name: 'Diario',
           balance: 0.0,
-          monthlyLimit: 1000.0,
-          limitSpend: 700.0,
           order: 1,
+          monthlyLimit: 1000.0, // Límite de ingreso
+          limitSpend: 700.0, // Límite de gasto
         ),
         Account(
-          id: '3',
-          name: 'Imprevistos',
+          id: const Uuid().v4(),
+          name: 'Imprevisto',
           balance: 0.0,
-          monthlyLimit: 3000.0,
-          limitSpend: 500.0,
           order: 2,
+          monthlyLimit: 3000.0, // Límite de ingreso
+          limitSpend: 500.0, // Límite de gasto
         ),
         Account(
-          id: '4',
+          id: const Uuid().v4(),
           name: 'Emergencias',
           balance: 0.0,
-          monthlyLimit: 10000.0,
-          limitSpend: 300.0,
           order: 3,
+          monthlyLimit: 10000.0, // Límite de ingreso
+          limitSpend: 3000.0, // Límite de gasto
         ),
         Account(
-          id: '5',
+          id: const Uuid().v4(),
           name: 'Ahorro',
           balance: 0.0,
-          monthlyLimit: 1000000.0,
-          limitSpend: 1.0,
           order: 4,
+          monthlyLimit: double.infinity, // Sin límite de ingreso
+          limitSpend: 1000.0, // Límite de gasto
         ),
       ];
 
       for (final account in defaultAccounts) {
-        await addAccount(account);
+        await box.add(account);
+        _log.info(
+            'Cuenta predeterminada creada: ${account.name} - Límite ingreso: ${account.monthlyLimit} - Límite gasto: ${account.limitSpend}');
       }
+
+      _log.info('Se crearon ${defaultAccounts.length} cuentas predeterminadas');
+    } else {
+      _log.info('Ya existen cuentas, saltando inicialización');
     }
   }
 
   // Método para inicializar categorías predeterminadas
   Future<void> initializeDefaultCategories() async {
-    final box = await categoriesBox;
+    final box = categoriesBoxSync;
+    _log.info('Iniciando creación de categorías predeterminadas...');
+
     if (box.isEmpty) {
       final defaultCategories = [
         // Categorías de Ingreso
-        Category(name: 'Alquileres', isIncome: true),
-        Category(name: 'Comisiones', isIncome: true),
-        Category(name: 'Inversiones', isIncome: true),
-        Category(name: 'Negocio', isIncome: true),
-        Category(name: 'Pensiones', isIncome: true),
-        Category(name: 'Royalties', isIncome: true),
-        Category(name: 'Salario', isIncome: true),
-        Category(name: 'Ventas', isIncome: true),
-        Category(name: 'Freelance', isIncome: true),
-        Category(name: 'Herencias', isIncome: true),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Alquileres',
+          isIncome: true,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Comisiones',
+          isIncome: true,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Inversiones',
+          isIncome: true,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Salario',
+          isIncome: true,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Negocio',
+          isIncome: true,
+        ),
 
         // Categorías de Gasto
-        Category(name: 'Alimentación', isIncome: false),
-        Category(name: 'Automóvil', isIncome: false),
-        Category(name: 'Deportes', isIncome: false),
-        Category(name: 'Educación', isIncome: false),
-        Category(name: 'Entretenimiento', isIncome: false),
-        Category(name: 'Hogar', isIncome: false),
-        Category(name: 'Impuestos', isIncome: false),
-        Category(name: 'Mascotas', isIncome: false),
-        Category(name: 'Moda', isIncome: false),
-        Category(name: 'Regalos', isIncome: false),
-        Category(name: 'Salud', isIncome: false),
-        Category(name: 'Seguros', isIncome: false),
-        Category(name: 'Tecnología', isIncome: false),
-        Category(name: 'Transporte', isIncome: false),
-        Category(name: 'Viajes', isIncome: false),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Alimentación',
+          isIncome: false,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Educación',
+          isIncome: false,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Entretenimiento',
+          isIncome: false,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Hogar',
+          isIncome: false,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Salud',
+          isIncome: false,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Transporte',
+          isIncome: false,
+        ),
+        Category(
+          id: const Uuid().v4(),
+          name: 'Servicios',
+          isIncome: false,
+        ),
       ];
 
       for (final category in defaultCategories) {
-        await addCategory(category);
+        await box.add(category);
+        _log.info(
+            'Categoría creada: ${category.name} (${category.isIncome ? "Ingreso" : "Gasto"})');
       }
+
+      _log.info(
+          'Se crearon ${defaultCategories.length} categorías predeterminadas');
+    } else {
+      _log.info('Ya existen categorías, saltando inicialización');
     }
   }
 
@@ -524,7 +585,7 @@ class DatabaseHelper {
   }
 
   Future<List<Category>> getCategories(bool isIncome) async {
-    final box = await categoriesBox;
+    final box = categoriesBoxSync;
     return box.values
         .where((category) => category.isIncome == isIncome)
         .toList();
@@ -545,18 +606,15 @@ class DatabaseHelper {
   // Método para eliminar todas las transacciones y restablecer los saldos de las cuentas
   Future<void> clearAllTransactions() async {
     final accountsBoxLocal = await accountsBox;
-    final transactionsBoxLocal = await transactionsBox;
-
-    // Eliminar todas las transacciones
-    await transactionsBoxLocal.clear();
 
     // Restablecer el saldo de todas las cuentas a 0
     final accounts = accountsBoxLocal.values.toList();
     for (final account in accounts) {
-      account.balance = 0.0; // Actualizar el saldo a 0
-      await accountsBoxLocal.put(
-          account.id, account); // Guardar la cuenta actualizada
+      account.balance = 0.0;
+      await accountsBoxLocal.put(account.id, account);
     }
+
+    // Solo limpiar las transacciones, no todas las cajas
   }
 
   // Método para calcular el gasto acumulado del mes
@@ -576,5 +634,11 @@ class DatabaseHelper {
       0.0,
       (sum, transaction) => sum + transaction.amount,
     );
+  }
+
+  Future<void> clearCategories() async {
+    await Hive.deleteBoxFromDisk('categories');
+    await initializeDefaultCategories();
+    _log.info('Categorías reinicializadas');
   }
 }

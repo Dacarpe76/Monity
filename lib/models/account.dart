@@ -80,7 +80,6 @@ class Account extends HiveObject {
     final lastDayOfMonth = DateTime(year, month + 1, 0);
 
     final transactions = box.values.where((t) {
-      if (t == null) return false;
       if (t.accountId != id || t.isIncome) return false;
 
       return t.date

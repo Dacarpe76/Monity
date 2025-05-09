@@ -1,32 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:logging/logging.dart';
 import 'screens/home_screen.dart';
-import 'models/account.dart';
-import 'models/transaction.dart';
-import 'models/category.dart';
 import 'services/database_helper.dart';
+import 'services/hive_service.dart';
 import 'package:provider/provider.dart';
 import 'package:monity/providers/currency_provider.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Configurar logging
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+  });
 
-  await Hive.initFlutter();
+  final log = Logger('main');
+  
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    await HiveService.initHive();
 
-  // Registrar adaptadores para los modelos.
-  Hive.registerAdapter(AccountAdapter());
-  Hive.registerAdapter(TransactionAdapter());
-  Hive.registerAdapter(CategoryAdapter());
+    final dbHelper = DatabaseHelper();
+    await dbHelper.clearCategories();
 
-  // Abrir cajas.
-  await Hive.openBox<Account>('accounts');
-  await Hive.openBox<Transaction>('transactions');
-  await Hive.openBox<Category>('categories');
-
-  // Inicializar cuentas y categorías predeterminadas.
-  final dbHelper = DatabaseHelper();
-  await dbHelper.initializeDefaultAccounts();
-  await dbHelper.initializeDefaultCategories();
+    log.info('Inicialización completada');
+  } catch (e) {
+    log.severe('Error durante la inicialización: $e');
+  }
 
   runApp(
     ChangeNotifierProvider(

@@ -18,12 +18,12 @@ class TransactionAdapter extends TypeAdapter<Transaction> {
     };
     return Transaction(
       id: fields[0] as String,
-      accountId: fields[1] as String,
-      description: fields[2] as String,
       amount: fields[3] as double,
       date: fields[4] as DateTime,
-      isIncome: fields[5] as bool,
       category: fields[6] as String,
+      description: fields[2] as String,
+      isIncome: fields[5] as bool,
+      accountId: fields[1] as String,
       originalCategory: fields[7] as String?,
     );
   }

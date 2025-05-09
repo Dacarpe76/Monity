@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/account.dart';
 import '../models/transaction.dart';
-//import '../models/category.dart';
+import '../models/category.dart';
 import '../services/database_helper.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -13,24 +13,25 @@ class AddTransactionScreen extends StatefulWidget {
   });
 
   @override
-  AddTransactionScreenState createState() => AddTransactionScreenState();
+  _AddTransactionScreenState createState() => _AddTransactionScreenState();
 }
 
-class AddTransactionScreenState extends State<AddTransactionScreen> {
+class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
-  String _selectedCategory = ''; // Cargar dinámicamente
-  String _transactionType = 'Gasto'; // Tipo de transacción inicial
-  List<String> _categories = []; // Lista de categorías
   Account? _selectedAccount; // Cuenta seleccionada
   List<Account> _accounts = []; // Lista de cuentas disponibles
+  List<Category> _categories = [];
+  Category? _selectedCategory;
+  bool _isIncome = false;
 
   @override
   void initState() {
     super.initState();
     _loadAccounts(); // Cargar cuentas al iniciar
+    _loadCategories(); // Cargar categorías al iniciar
     if (widget.account != null) {
       _selectedAccount = widget.account; // Preseleccionar la cuenta.
     }
@@ -55,17 +56,14 @@ class AddTransactionScreenState extends State<AddTransactionScreen> {
 
   // Método para cargar categorías desde la base de datos
   Future<void> _loadCategories() async {
-    final dbHelper = DatabaseHelper();
     try {
-      final categories =
-          await dbHelper.getCategories(_transactionType == 'Ingreso');
+      final categories = await DatabaseHelper().getCategories(_isIncome);
       setState(() {
-        _categories = categories.map((category) => category.name).toList();
-        _selectedCategory =
-            _categories.isNotEmpty ? _categories.first : 'Sin categoría';
+        _categories = categories;
+        _selectedCategory = null; // Reset selection
       });
     } catch (e) {
-      //print("Error al cargar las categorías: $e");
+      debugPrint('Error cargando categorías: $e');
     }
   }
 
@@ -91,9 +89,9 @@ class AddTransactionScreenState extends State<AddTransactionScreen> {
         id: DateTime.now().toString(),
         amount: double.parse(_amountController.text),
         date: _selectedDate,
-        category: _selectedCategory,
+        category: _selectedCategory?.name ?? 'Sin categoría',
         description: _descriptionController.text,
-        isIncome: _transactionType == 'Ingreso',
+        isIncome: _isIncome,
         accountId: _selectedAccount!.id, // Usa la cuenta seleccionada.
       );
 
@@ -106,11 +104,12 @@ class AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   // Cambiar el tipo de transacción
-  void _onTransactionTypeChanged(String type) {
+  void _onTransactionTypeChanged(bool isIncome) {
     setState(() {
-      _transactionType = type;
+      _isIncome = isIncome;
+      _selectedCategory = null; // Reset selection
     });
-    _loadCategories(); // Recargar categorías según el tipo.
+    _loadCategories(); // Recargar categorías según el nuevo tipo
   }
 
   @override
@@ -173,77 +172,37 @@ class AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Selector de tipo de transacción (Gasto/Ingreso)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.blueGrey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Tipo de Transacción:',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Row(
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _transactionType == 'Gasto'
-                                  ? Colors.red
-                                  : Colors.grey,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () => _onTransactionTypeChanged('Gasto'),
-                            child: const Text('Gasto'),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _transactionType == 'Ingreso'
-                                  ? Colors.green
-                                  : Colors.grey,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () =>
-                                _onTransactionTypeChanged('Ingreso'),
-                            child: const Text('Ingreso'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                // Switch para tipo de transacción
+                Row(
+                  children: [
+                    const Text('Tipo:'),
+                    Switch(
+                      value: _isIncome,
+                      onChanged: _onTransactionTypeChanged,
+                    ),
+                    Text(_isIncome ? 'Ingreso' : 'Gasto'),
+                  ],
                 ),
                 const SizedBox(height: 16),
 
-                // Selector de categoría
-                DropdownButtonFormField<String>(
-                  value:
-                      _selectedCategory.isNotEmpty ? _selectedCategory : null,
-                  decoration: InputDecoration(
-                    labelText: 'Categoría',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _categories.map((String category) {
-                    return DropdownMenuItem<String>(
+                // Dropdown de categorías
+                DropdownButtonFormField<Category>(
+                  value: _selectedCategory,
+                  hint: const Text('Seleccionar categoría'),
+                  isExpanded: true,
+                  items: _categories.map((Category category) {
+                    return DropdownMenuItem<Category>(
                       value: category,
-                      child: Text(category),
+                      child: Text(category.name),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (Category? newValue) {
                     setState(() {
-                      _selectedCategory = newValue!;
+                      _selectedCategory = newValue;
                     });
                   },
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null) {
                       return 'Por favor selecciona una categoría';
                     }
                     return null;

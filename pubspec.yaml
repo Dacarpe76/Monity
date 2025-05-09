@@ -11,11 +11,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  logging: ^1.2.0
   intl: ^0.19.0 # O la última versión compatible
   provider: ^6.1.2 # O la última versión compatible
-  hive: ^2.0.0
+  hive: ^2.2.3
   hive_flutter: ^1.1.0
-  path_provider: ^2.0.15
+  path_provider: ^2.1.1
   cupertino_icons: ^1.0.8
   uuid: ^4.4.0 # O la última versión disponible
   freezed_annotation: ^2.0.0
@@ -23,8 +24,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner: ^2.0.0
-  hive_generator: ^1.1.0
+  build_runner: ^2.4.6
+  hive_generator: ^2.0.1
   flutter_lints: ^5.0.0
   freezed: ^2.0.0
 

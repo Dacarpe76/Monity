@@ -151,7 +151,7 @@ class AccountDetailScreenState extends State<AccountDetailScreen> {
                               // Categoría y Comentario
                               Expanded(
                                 child: Text(
-                                  '${transaction.category}${transaction.originalCategory != null ? ' (${transaction.originalCategory})' : ''} - ${transaction.description}',
+                                  '${transaction.category} - ${transaction.description}',
                                   style: TextStyle(
                                       fontSize: 14, color: Colors.black),
                                   overflow: TextOverflow.ellipsis,
