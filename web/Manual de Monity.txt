@@ -1,0 +1,65 @@
+**Manual de Usuario de Monity: Domina tus Finanzas con el Método de Cascada**
+
+¡Bienvenido a Monity!
+
+Este manual te guiará para que domines tus finanzas personales a través de nuestro innovador sistema de gestión en cascada. Aprenderás a configurar tus cuentas, a interpretar la información visual y a utilizar todas las herramientas para optimizar tu ahorro y tomar el control de tu economía.
+
+**1. El Corazón de Monity: El Sistema de Cuentas en Cascada**
+
+Imagina tus finanzas como una fuente con varios niveles. En Monity, el dinero fluye de la misma manera: en cascada.
+
+Cuando recibes un ingreso, el dinero primero llena la cuenta más prioritaria (la que está más arriba en tu lista). Una vez que esa cuenta alcanza su "Saldo Máximo Mensual", cualquier excedente se derrama automáticamente y comienza a llenar la siguiente cuenta en el orden que hayas establecido. Este proceso se repite hasta que todo el ingreso se ha distribuido.
+
+El objetivo de este sistema es simple pero poderoso:
+*   **Prioriza tu gasto:** Asegura que tus necesidades básicas y gastos diarios se cubran primero.
+*   **Automatiza tu ahorro:** El dinero que sobra después de cubrir tus gastos fluye de forma natural hacia tus cuentas de imprevistos, emergencias y, finalmente, al ahorro puro, sin que tengas que hacer transferencias manuales.
+
+El **orden de las cuentas** es fundamental. Tú decides la prioridad, y el dinero seguirá ese camino.
+
+**2. Configuración de Cuentas: La Base de tu Éxito Financiero**
+
+Este es el paso más importante para que Monity trabaje para ti. Puedes acceder a la configuración desde el icono del engranaje (⚙️) en la pantalla principal.
+
+Para cada cuenta, debes definir dos valores clave:
+
+*   **Saldo Máximo Mensual:** Es el "tope" de la cuenta. Una vez que el saldo de la cuenta alcanza este límite durante el mes, cualquier ingreso adicional se desbordará a la siguiente cuenta en la cascada. Piensa en ello como el nivel máximo de agua que puede contener cada escalón de la fuente.
+
+*   **Límite de Gasto Mensual:** Es una referencia para ti, un objetivo de gasto. Monity usará este valor para proyectar tus hábitos y mostrarte si vas por buen camino a través de un sistema de colores. No detiene el gasto, pero te da una señal visual clara de tu comportamiento financiero.
+
+**¿Por qué configurar esto?**
+Al establecer límites, creas un plan para tu dinero. Obligas a que cada euro tenga un propósito, ya sea para un gasto diario o para el ahorro a largo plazo. Esto evita el gasto impulsivo y potencia tu capacidad de ahorro sin esfuerzo.
+
+**3. Proyección a Fin de Mes y el Significado de los Colores**
+
+Monity utiliza colores para darte información instantánea sobre el estado de tus finanzas.
+
+*   **Barras de Progreso de las Cuentas:** Cada cuenta tiene una barra de color que muestra visualmente el saldo actual en relación con el "Saldo Máximo Mensual". Esto te permite ver de un vistazo cuánto "espacio" le queda a cada cuenta para llenarse antes de que el dinero se desborde a la siguiente.
+
+*   **Porcentaje de Proyección (Debajo de cada cuenta):** Este número es una estimación de cuánto habrás gastado a final de mes si continúas con tu ritmo actual. El color te advierte:
+    *   **Verde:** ¡Vas bien! Tu proyección de gasto está por debajo del 80% de tu "Límite de Gasto Mensual".
+    *   **Azul:** Estás dentro de lo planeado. Tu gasto se proyecta entre el 80% y el 100% del límite.
+    *   **Rojo:** ¡Atención! Tu ritmo de gasto actual te llevará a superar el límite que te habías marcado.
+
+*   **Colores de Categorías:** Al crear o editar una categoría (por ejemplo, "Restaurantes", "Gasolina"), puedes asignarle un color. Esto te ayuda a identificar rápidamente en qué gastas tu dinero cuando revisas el historial de movimientos.
+
+**4. Gestionando tu Dinero Día a Día**
+
+Además del sistema de cascada, Monity te ofrece todo lo que necesitas para la gestión diaria:
+
+*   **Registrar Ingresos y Gastos:** Usa los botones (+) verde para ingresos y (-) rojo para gastos en la pantalla principal. Es rápido e intuitivo.
+
+*   **Historial de Movimientos:** Pulsa sobre cualquier cuenta para ver un listado detallado de todas las transacciones asociadas a ella.
+
+*   **Gestión de Categorías:** En la pantalla de configuración, puedes añadir, editar o eliminar categorías de gastos e ingresos para adaptar la aplicación a tu vida.
+
+*   **Transacciones Programadas:** También en configuración, puedes automatizar gastos e ingresos recurrentes (nóminas, alquiler, suscripciones) para no tener que introducirlos a mano cada vez.
+
+*   **Gestión de Créditos:** Monity te permite llevar un control de tus préstamos o hipotecas, automatizando el pago desde la cuenta que elijas.
+
+*   **Exportar y Resetear:** En la configuración, tienes la opción de exportar todas tus transacciones a un archivo CSV o de borrar todos los datos para empezar de cero.
+
+**Conclusión**
+
+Monity transforma la gestión financiera en un proceso automático e inteligente. Al dedicar unos minutos a configurar tus cuentas en cascada, pondrás tu dinero a trabajar para ti, asegurando que cubres tus necesidades mientras potencias tu ahorro sin darte cuenta.
+
+¡Empieza a configurar tus cuentas y toma el control de tu futuro financiero!

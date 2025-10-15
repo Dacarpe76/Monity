@@ -1,0 +1,51 @@
+ID,Fecha,Cuenta,Tipo,Cantidad,Concepto,Categoria
+1,2025-09-03T11:06:01.000,Bolsillo,TipoTransaccion.ingreso,244.57,,Otros
+2,2025-09-03T11:06:21.000,Ahorro,TipoTransaccion.ingreso,12.86,,Inversiones
+3,2025-09-03T11:07:28.000,Bolsillo,TipoTransaccion.ingreso,55.43,,Salario
+4,2025-09-03T11:07:28.000,Diario,TipoTransaccion.ingreso,532.79,,Salario
+5,2025-09-03T11:13:13.000,Diario,TipoTransaccion.ingreso,267.21,,Prestamos
+6,2025-09-03T11:13:13.000,Imprevistos,TipoTransaccion.ingreso,203.84,,Prestamos
+7,2025-09-03T11:13:28.000,Diario,TipoTransaccion.gasto,-471.06,Seguro del coche ,Transporte
+8,2025-09-03T11:16:47.000,Imprevistos,TipoTransaccion.ingreso,3396.15,,Prestamos
+9,2025-09-03T11:16:47.000,Emergencias,TipoTransaccion.ingreso,3132.78,,Prestamos
+10,2025-09-03T16:47:27.000,Gastos de cada,TipoTransaccion.gasto,-20.98,lidl,Comida y Bebida
+11,2025-09-03T18:08:21.000,Bolsillo,TipoTransaccion.gasto,-24.19,Aliexpress ,Educaci�n
+12,2025-09-05T09:43:44.000,Emergencias,TipoTransaccion.ingreso,489.07,,Pensi�n
+13,2025-09-06T14:55:54.000,Gastos de cada,TipoTransaccion.gasto,-10.22,Pingo doce,Comida y Bebida
+14,2025-09-06T15:00:21.000,Bolsillo,TipoTransaccion.gasto,-0.5,Relleno para cta Ana,Otros
+15,2025-09-06T17:56:11.000,Bolsillo,TipoTransaccion.gasto,-17.99,Bolso Pull and bear,Ropa y Accesorios
+16,2025-09-06T18:50:26.000,Bolsillo,TipoTransaccion.gasto,-3.25,Cerveza en Braga,Comida y Bebida
+17,2025-09-07T17:32:36.000,Bolsillo,TipoTransaccion.gasto,-67.01,Gasoil,Transporte
+18,2025-09-09T18:12:37.000,Gastos de cada,TipoTransaccion.gasto,-11.46,Lidl,Comida y Bebida
+19,2025-09-05T00:00:00.000,Gastos de cada,TipoTransaccion.gasto,-43.31,Luz,Vivienda
+20,2025-09-11T13:27:30.000,Bolsillo,TipoTransaccion.gasto,-2.1,Copia de llave ,Vivienda
+21,2025-09-12T16:27:27.000,Gastos de cada,TipoTransaccion.gasto,-24.6,Aceite ,Comida y Bebida
+22,2025-09-13T14:08:10.000,Bolsillo,TipoTransaccion.gasto,-1.0,parking Portugal ,Transporte
+23,2025-09-13T14:51:06.000,Bolsillo,TipoTransaccion.gasto,-15.0,Pizza,Comida y Bebida
+24,2025-09-13T14:51:26.000,Bolsillo,TipoTransaccion.gasto,-1.0,Calcetines Ana,Ropa y Accesorios
+25,2025-09-13T17:09:06.000,Bolsillo,TipoTransaccion.gasto,-5.99,jersey Pdero del Hierro ,Ropa y Accesorios
+26,2025-09-13T17:47:20.000,Bolsillo,TipoTransaccion.gasto,-3.8,Cerveza caf� en Gadis,Comida y Bebida
+27,2025-09-13T18:12:37.000,Gastos de cada,TipoTransaccion.gasto,-16.71,Gadis,Comida y Bebida
+28,2025-09-15T15:06:01.000,Gastos de cada,TipoTransaccion.gasto,-20.74,Lidl ,Comida y Bebida
+29,2025-09-15T15:06:46.000,Emergencias,TipoTransaccion.ingreso,1.0,,Reembolsos
+30,2025-09-15T23:26:08.000,Bolsillo,TipoTransaccion.gasto,-7.0,Pizza movil,Comida y Bebida
+31,2025-09-16T10:22:52.000,Diario,TipoTransaccion.gasto,-21.99,Gemini,Educaci�n
+32,2025-09-18T11:53:07.000,Emergencias,TipoTransaccion.ingreso,2.0,,Regalos
+33,2025-09-18T15:59:32.000,Bolsillo,TipoTransaccion.gasto,-0.3,fotocopia,Otros
+34,2025-09-19T17:18:38.000,Gastos de cada,TipoTransaccion.gasto,-18.58,Lidl ,Comida y Bebida
+35,2025-09-19T23:47:33.000,Gastos de cada,TipoTransaccion.gasto,-3.39,Jenjibre Familia Cangas,Comida y Bebida
+36,2025-09-19T23:49:44.000,Gastos de cada,TipoTransaccion.ingreso,18.42,,Otros
+37,2025-09-20T12:40:22.000,Bolsillo,TipoTransaccion.gasto,-29.99,Reebok blancas,Ropa y Accesorios
+38,2025-09-20T13:23:21.000,Gastos de cada,TipoTransaccion.gasto,-7.2,Comida en Vigo,Comida y Bebida
+39,2025-09-20T20:02:09.000,Gastos de cada,TipoTransaccion.gasto,-7.81,comida ,Comida y Bebida
+40,2025-09-21T09:49:05.000,Diario,TipoTransaccion.gasto,-132.06,Credito,Pr�stamos
+41,2025-09-24T15:58:47.000,Bolsillo,TipoTransaccion.gasto,-22.2,Correo Miguel,Otros
+42,2025-09-24T16:20:27.000,Emergencias,TipoTransaccion.ingreso,5.01,,Reembolsos
+43,2025-09-25T17:56:37.000,Gastos de cada,TipoTransaccion.gasto,-17.33,Lidl,Comida y Bebida
+44,2025-09-26T17:19:23.000,Imprevistos,TipoTransaccion.gasto,-240.0,Oficina ,Pr�stamos
+45,2025-09-26T18:57:35.000,Bolsillo,TipoTransaccion.gasto,-20.0,Gasoil,Transporte
+46,2025-09-28T19:00:52.000,Bolsillo,TipoTransaccion.gasto,-2.4,Pan y croissant ,Comida y Bebida
+47,2025-09-29T11:26:55.000,Diario,TipoTransaccion.gasto,-60.0,Ahorro,Educaci�n
+48,2025-09-29T13:28:16.000,Gastos de cada,TipoTransaccion.gasto,-14.07,Lidl cangas ,Comida y Bebida
+49,2025-10-01T10:57:14.000,Diario,TipoTransaccion.gasto,0.0,Pago cr�dito: Ana,Pr�stamos
+50,2025-10-01T10:57:14.000,Diario,TipoTransaccion.gasto,0.0,Pago cr�dito: Saldo de Ana ,Pr�stamos
