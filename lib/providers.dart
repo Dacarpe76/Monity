@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:monity/data/currencies.dart';
 import 'package:monity/data/database.dart';
 import 'package:monity/logic/finance_service.dart';
 
@@ -60,6 +61,21 @@ final sortedCategoriesProvider = StreamProvider<List<CategoriaWithUsage>>((ref) 
 final appSettingsProvider = StreamProvider<AppSetting>((ref) {
   final dao = ref.watch(appSettingsDaoProvider);
   return dao.watchSettings();
+});
+
+final currencyProvider = Provider<Currency>((ref) {
+  final settings = ref.watch(appSettingsProvider);
+  
+  return settings.when(
+    data: (appSettings) {
+      return supportedCurrencies.firstWhere(
+        (c) => c.code == appSettings.currency,
+        orElse: () => supportedCurrencies.firstWhere((c) => c.code == 'EUR'),
+      );
+    },
+    loading: () => supportedCurrencies.firstWhere((c) => c.code == 'EUR'), // Default while loading
+    error: (_, __) => supportedCurrencies.firstWhere((c) => c.code == 'EUR'), // Default on error
+  );
 });
 
 final showAmountsProvider = StateProvider<bool>((ref) => true);

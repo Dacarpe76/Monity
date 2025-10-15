@@ -5,6 +5,7 @@ import 'package:monity/data/database.dart';
 import 'package:monity/providers.dart';
 import 'package:monity/ui/screens/transaction_list_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:monity/ui/utils/color_utils.dart';
 
 class AccountCard extends ConsumerWidget {
   final Cuenta cuenta;
@@ -45,16 +46,16 @@ class AccountCard extends ConsumerWidget {
         : 0;
 
     Color budgetColor;
-    if (porcentajeGastado > 1.0) {
+    if (porcentajeGastado >= 1.0) {
       budgetColor = Colors.red.shade900;
     } else if (porcentajeGastado >= 0.8) {
-      budgetColor = Colors.orange.shade900;
+      budgetColor = Colors.blue.shade900;
     } else {
       budgetColor = Colors.green.shade900;
     }
 
-    final bool isDepleted = cuenta.saldoActual <= 0 && cuenta.gastoAcumuladoMes > 0;
-    final Color cardColor = isDepleted ? Colors.black : Colors.transparent;
+    final bool isDepleted = cuenta.saldoActual <= 0;
+    final bool isZero = cuenta.saldoActual == 0;
     final Color mainTextColor = isDepleted ? Colors.white : budgetColor;
 
     return InkWell(
@@ -68,8 +69,11 @@ class AccountCard extends ConsumerWidget {
       child: Card(
         elevation: 0.0,
         margin: const EdgeInsets.symmetric(vertical: 8.0),
-        color: cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: isZero ? Colors.black : getGastoProgressColor(porcentajeGastado).withAlpha((255 * 0.2).round()),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Colors.black, width: 1),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

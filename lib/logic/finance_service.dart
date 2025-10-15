@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:monity/data/database.dart';
 import 'package:csv/csv.dart';
 import 'package:logger/logger.dart';
+import 'package:monity/data/default_categories.dart';
 
 class FinanceService {
   final AppDatabase _db;
@@ -191,55 +192,60 @@ class FinanceService {
     }
 
     for (final credit in allCredits) {
-      final isPaymentDue =
-          credit.paymentDay == now.day && credit.remainingAmount > 0;
-      final alreadyPaidThisMonth = credit.lastPaymentDate != null &&
-          credit.lastPaymentDate!.year == now.year &&
-          credit.lastPaymentDate!.month == now.month;
+      if (credit.remainingAmount <= 0) continue;
 
-      if (isPaymentDue && !alreadyPaidThisMonth) {
+      DateTime lastPayment = credit.lastPaymentDate ?? credit.createdAt;
+
+      // Determine the year and month of the next payment
+      int nextPaymentYear = lastPayment.year;
+      int nextPaymentMonth = lastPayment.month;
+
+      if (lastPayment.day >= credit.paymentDay) {
+        nextPaymentMonth++;
+        if (nextPaymentMonth > 12) {
+          nextPaymentMonth = 1;
+          nextPaymentYear++;
+        }
+      }
+
+      // Determine the day of the next payment, handling months with fewer days
+      int daysInMonth = DateTime(nextPaymentYear, nextPaymentMonth + 1, 0).day;
+      int nextPaymentDay = credit.paymentDay > daysInMonth ? daysInMonth : credit.paymentDay;
+
+      DateTime nextPaymentDate = DateTime(nextPaymentYear, nextPaymentMonth, nextPaymentDay);
+
+      if (now.isAfter(nextPaymentDate) || now.isAtSameMomentAs(nextPaymentDate)) {
+        final alreadyPaidThisMonth = credit.lastPaymentDate != null &&
+            credit.lastPaymentDate!.year == now.year &&
+            credit.lastPaymentDate!.month == now.month;
+
+        if (alreadyPaidThisMonth) continue;
+
         Logger().i('Processing payment for credit: ${credit.name}');
-        await _db.transaction(() async {
-          final cuenta =
-              await _db.cuentasDao.getCuentaById(credit.linkedAccountId);
-          if (cuenta == null) {
-            Logger().e('Linked account for credit ${credit.name} not found.');
-            return;
-          }
 
-          final paymentAmount = (credit.paymentAmount < credit.remainingAmount)
-              ? credit.paymentAmount
-              : credit.remainingAmount;
+        final paymentAmount = (credit.paymentAmount < credit.remainingAmount)
+            ? credit.paymentAmount
+            : credit.remainingAmount;
 
-          final gastoId =
-              await _db.gastosDao.insertGasto(GastosCompanion.insert(
-            cantidad: paymentAmount,
-            concepto: 'Pago crédito: ${credit.name}',
-            fecha: now,
-            idCategoria: categoriaPrestamos.id,
-          ));
+        final success = await agregarGasto(
+          paymentAmount,
+          'Pago crédito: ${credit.name}',
+          categoriaPrestamos.id,
+          credit.linkedAccountId,
+          now,
+        );
 
-          await _db.transaccionesDao
-              .insertTransaccion(TransaccionesCompanion.insert(
-            idCuenta: credit.linkedAccountId,
-            cantidad: -paymentAmount,
-            tipo: TipoTransaccion.gasto,
-            fecha: now,
-            idGasto: Value(gastoId),
-          ));
-
-          final updatedCuenta = cuenta.copyWith(
-            saldoActual: cuenta.saldoActual - paymentAmount,
-            gastoAcumuladoMes: cuenta.gastoAcumuladoMes + paymentAmount,
-          );
-          await _db.cuentasDao.upsertCuenta(updatedCuenta.toCompanion(false));
-
+        if (success) {
           final updatedCredit = credit.copyWith(
             remainingAmount: credit.remainingAmount - paymentAmount,
             lastPaymentDate: Value(now),
           );
           await _db.creditosDao.upsertCredito(updatedCredit.toCompanion(false));
-        });
+          Logger().i('Credit payment for ${credit.name} processed successfully.');
+        } else {
+          Logger().w(
+              'Credit payment for ${credit.name} failed due to insufficient funds.');
+        }
       }
     }
   }
@@ -297,9 +303,28 @@ class FinanceService {
     }
   }
 
-  Future<void> agregarGasto(double cantidad, String concepto, int idCategoria,
+  Future<bool> agregarGasto(double cantidad, String concepto, int idCategoria,
       int idCuentaOrigen, DateTime selectedDate) async {
     final fecha = selectedDate;
+    final cuentas = await _db.cuentasDao.allCuentas;
+    final indiceCuentaOrigen =
+        cuentas.indexWhere((c) => c.id == idCuentaOrigen);
+
+    if (indiceCuentaOrigen == -1) {
+      Logger().e('Error: Cuenta de origen no encontrada.');
+      return false;
+    }
+
+    double saldoTotalDisponible = 0;
+    for (int i = indiceCuentaOrigen; i < cuentas.length; i++) {
+      saldoTotalDisponible += cuentas[i].saldoActual;
+    }
+
+    if (saldoTotalDisponible < cantidad) {
+      Logger().w('Saldo insuficiente para agregar el gasto.');
+      return false; // Not enough balance in all subsequent accounts
+    }
+
     final gastoId = await _db.gastosDao.insertGasto(GastosCompanion.insert(
       cantidad: cantidad,
       concepto: concepto,
@@ -307,15 +332,7 @@ class FinanceService {
       idCategoria: idCategoria,
     ));
 
-    final cuentas = await _db.cuentasDao.allCuentas;
     var cantidadRestante = cantidad;
-
-    final indiceCuentaOrigen =
-        cuentas.indexWhere((c) => c.id == idCuentaOrigen);
-    if (indiceCuentaOrigen == -1) {
-      Logger().e('Error: Cuenta de origen no encontrada.');
-      return;
-    }
 
     for (int i = indiceCuentaOrigen; i < cuentas.length; i++) {
       if (cantidadRestante <= 0) break;
@@ -351,6 +368,97 @@ class FinanceService {
         cantidadRestante -= cantidadADebitar;
       }
     }
+    return true;
+  }
+
+  Future<void> agregarGastoProgramado(
+      double cantidad,
+      String concepto,
+      int idCategoria,
+      int idCuentaOrigen,
+      DateTime fechaInicio,
+      Frecuencia frecuencia,
+      DateTime? fechaFin,
+      {int? diaDelMes,
+      int? diaDeLaSemana,
+      int? id}) async {
+    await _db.transaccionesProgramadasDao.upsertTransaccionProgramada(
+      TransaccionesProgramadasCompanion.insert(
+        id: id != null ? Value(id) : const Value.absent(),
+        descripcion: concepto,
+        cantidad: cantidad,
+        tipo: TipoTransaccion.gasto,
+        idCategoria: Value(idCategoria),
+        idCuentaOrigen: Value(idCuentaOrigen),
+        frecuencia: frecuencia,
+        fechaInicio: fechaInicio,
+        proximaEjecucion: fechaInicio,
+        fechaFin: Value(fechaFin),
+        isTransferencia: const Value(false),
+        diaDelMes: Value(diaDelMes),
+        diaDeLaSemana: Value(diaDeLaSemana),
+      ),
+    );
+  }
+
+  Future<void> agregarIngresoProgramado(
+      double cantidad,
+      String concepto,
+      int idCategoria,
+      int idCuentaDestino,
+      DateTime fechaInicio,
+      Frecuencia frecuencia,
+      DateTime? fechaFin,
+      {int? diaDelMes,
+      int? diaDeLaSemana,
+      int? id}) async {
+    await _db.transaccionesProgramadasDao.upsertTransaccionProgramada(
+      TransaccionesProgramadasCompanion.insert(
+        id: id != null ? Value(id) : const Value.absent(),
+        descripcion: concepto,
+        cantidad: cantidad,
+        tipo: TipoTransaccion.ingreso,
+        idCategoria: Value(idCategoria),
+        idCuentaDestino: Value(idCuentaDestino),
+        frecuencia: frecuencia,
+        fechaInicio: fechaInicio,
+        proximaEjecucion: fechaInicio,
+        fechaFin: Value(fechaFin),
+        isTransferencia: const Value(false),
+        diaDelMes: Value(diaDelMes),
+        diaDeLaSemana: Value(diaDeLaSemana),
+      ),
+    );
+  }
+
+  Future<void> agregarTransferenciaProgramada(
+      double cantidad,
+      String concepto,
+      int idCuentaOrigen,
+      int idCuentaDestino,
+      DateTime fechaInicio,
+      Frecuencia frecuencia,
+      DateTime? fechaFin,
+      {int? diaDelMes,
+      int? diaDeLaSemana,
+      int? id}) async {
+    await _db.transaccionesProgramadasDao.upsertTransaccionProgramada(
+      TransaccionesProgramadasCompanion.insert(
+        id: id != null ? Value(id) : const Value.absent(),
+        descripcion: concepto,
+        cantidad: cantidad,
+        tipo: TipoTransaccion.transferencia,
+        idCuentaOrigen: Value(idCuentaOrigen),
+        idCuentaDestino: Value(idCuentaDestino),
+        frecuencia: frecuencia,
+        fechaInicio: fechaInicio,
+        proximaEjecucion: fechaInicio,
+        fechaFin: Value(fechaFin),
+        isTransferencia: const Value(true),
+        diaDelMes: Value(diaDelMes),
+        diaDeLaSemana: Value(diaDeLaSemana),
+      ),
+    );
   }
 
   Future<void> recalculateMonthlyAccumulated() async {
@@ -399,48 +507,132 @@ class FinanceService {
     }
   }
 
-  Future<void> checkAndExecuteScheduledTransactions() async {
-    Logger().d('Checking and executing scheduled transactions...');
+  Future<void> checkAndExecuteScheduledIncomes() async {
+    Logger().d('Checking and executing scheduled incomes...');
     final now = DateTime.now();
     final scheduledTransactions =
         await _db.transaccionesProgramadasDao.allTransaccionesProgramadas;
 
     for (final transaction in scheduledTransactions) {
-      if (transaction.proximaEjecucion.isBefore(now) ||
-          transaction.proximaEjecucion.isAtSameMomentAs(now)) {
-        // Execute the transaction
-        if (transaction.isTransferencia) {
-          if (transaction.idCuentaOrigen != null &&
-              transaction.idCuentaDestino != null) {
-            await agregarTransferencia(
-              transaction.cantidad,
-              transaction.idCuentaOrigen!,
-              transaction.idCuentaDestino!,
-              transaction.proximaEjecucion,
-            );
-          }
-        } else if (transaction.tipo == TipoTransaccion.ingreso) {
-          if (transaction.idCategoria != null &&
-              transaction.idCuentaDestino != null) {
-            await agregarIngreso(
-              transaction.cantidad,
-              transaction.idCategoria!,
-              transaction.idCuentaDestino!,
-              transaction.proximaEjecucion,
-            );
-          }
-        } else if (transaction.tipo == TipoTransaccion.gasto) {
-          if (transaction.idCategoria != null &&
-              transaction.idCuentaOrigen != null) {
-            await agregarGasto(
-              transaction.cantidad,
-              transaction
-                  .descripcion, // Using description as concept for scheduled expenses
-              transaction.idCategoria!,
-              transaction.idCuentaOrigen!,
-              transaction.proximaEjecucion,
-            );
-          }
+      if (transaction.tipo == TipoTransaccion.ingreso &&
+          (transaction.proximaEjecucion.isBefore(now) ||
+              transaction.proximaEjecucion.isAtSameMomentAs(now))) {
+        if (transaction.idCategoria != null &&
+            transaction.idCuentaDestino != null) {
+          await agregarIngreso(
+            transaction.cantidad,
+            transaction.idCategoria!,
+            transaction.idCuentaDestino!,
+            transaction.proximaEjecucion,
+          );
+        }
+
+        // Calculate next execution date
+        DateTime nextExecutionDate = transaction.proximaEjecucion;
+        switch (transaction.frecuencia) {
+          case Frecuencia.diaria:
+            nextExecutionDate = DateTime(nextExecutionDate.year,
+                nextExecutionDate.month, nextExecutionDate.day + 1);
+            break;
+          case Frecuencia.semanal:
+            nextExecutionDate = DateTime(nextExecutionDate.year,
+                nextExecutionDate.month, nextExecutionDate.day + 7);
+            break;
+          case Frecuencia.mensual:
+            nextExecutionDate = DateTime(nextExecutionDate.year,
+                nextExecutionDate.month + 1, nextExecutionDate.day);
+            break;
+          case Frecuencia.anual:
+            nextExecutionDate = DateTime(nextExecutionDate.year + 1,
+                nextExecutionDate.month, nextExecutionDate.day);
+            break;
+        }
+
+        // Update the scheduled transaction
+        await _db.transaccionesProgramadasDao.upsertTransaccionProgramada(
+          transaction
+              .copyWith(
+                proximaEjecucion: nextExecutionDate,
+              )
+              .toCompanion(false),
+        );
+      }
+    }
+  }
+
+  Future<void> checkAndExecuteScheduledExpenses() async {
+    Logger().d('Checking and executing scheduled expenses...');
+    final now = DateTime.now();
+    final scheduledTransactions =
+        await _db.transaccionesProgramadasDao.allTransaccionesProgramadas;
+
+    for (final transaction in scheduledTransactions) {
+      if (transaction.tipo == TipoTransaccion.gasto &&
+          (transaction.proximaEjecucion.isBefore(now) ||
+              transaction.proximaEjecucion.isAtSameMomentAs(now))) {
+        if (transaction.idCategoria != null &&
+            transaction.idCuentaOrigen != null) {
+          await agregarGasto(
+            transaction.cantidad,
+            transaction.descripcion,
+            transaction.idCategoria!,
+            transaction.idCuentaOrigen!,
+            transaction.proximaEjecucion,
+          );
+        }
+
+        // Calculate next execution date
+        DateTime nextExecutionDate = transaction.proximaEjecucion;
+        switch (transaction.frecuencia) {
+          case Frecuencia.diaria:
+            nextExecutionDate = DateTime(nextExecutionDate.year,
+                nextExecutionDate.month, nextExecutionDate.day + 1);
+            break;
+          case Frecuencia.semanal:
+            nextExecutionDate = DateTime(nextExecutionDate.year,
+                nextExecutionDate.month, nextExecutionDate.day + 7);
+            break;
+          case Frecuencia.mensual:
+            nextExecutionDate = DateTime(nextExecutionDate.year,
+                nextExecutionDate.month + 1, nextExecutionDate.day);
+            break;
+          case Frecuencia.anual:
+            nextExecutionDate = DateTime(nextExecutionDate.year + 1,
+                nextExecutionDate.month, nextExecutionDate.day);
+            break;
+        }
+
+        // Update the scheduled transaction
+        await _db.transaccionesProgramadasDao.upsertTransaccionProgramada(
+          transaction
+              .copyWith(
+                proximaEjecucion: nextExecutionDate,
+              )
+              .toCompanion(false),
+        );
+      }
+    }
+  }
+
+  Future<void> checkAndExecuteScheduledTransfers() async {
+    Logger().d('Checking and executing scheduled transfers...');
+    final now = DateTime.now();
+    final scheduledTransactions =
+        await _db.transaccionesProgramadasDao.allTransaccionesProgramadas;
+
+    for (final transaction in scheduledTransactions) {
+      if (transaction.isTransferencia &&
+          (transaction.proximaEjecucion.isBefore(now) ||
+              transaction.proximaEjecucion.isAtSameMomentAs(now))) {
+        if (transaction.idCuentaOrigen != null &&
+            transaction.idCuentaDestino != null) {
+          await agregarTransferencia(
+            transaction.cantidad,
+            transaction.idCuentaOrigen!,
+            transaction.idCuentaDestino!,
+            transaction.proximaEjecucion,
+            concepto: transaction.descripcion,
+          );
         }
 
         // Calculate next execution date
@@ -477,34 +669,25 @@ class FinanceService {
   }
 
   Future<void> initializeDatabase() async {
-    final cuentas = await _db.cuentasDao.allCuentas;
-    if (cuentas.isEmpty) {
-      // Valores iniciales por defecto
-      await _db.cuentasDao.upsertCuenta(CuentasCompanion.insert(
-          nombre: 'Bolsillo',
-          saldoActual: 0,
-          saldoMaximoMensual: 300,
-          limiteGastoMensual: 200));
-      await _db.cuentasDao.upsertCuenta(CuentasCompanion.insert(
-          nombre: 'Diario',
-          saldoActual: 0,
-          saldoMaximoMensual: 800,
-          limiteGastoMensual: 700));
-      await _db.cuentasDao.upsertCuenta(CuentasCompanion.insert(
-          nombre: 'Imprevistos',
-          saldoActual: 0,
-          saldoMaximoMensual: 3600,
-          limiteGastoMensual: 1000));
-      await _db.cuentasDao.upsertCuenta(CuentasCompanion.insert(
-          nombre: 'Emergencias',
-          saldoActual: 0,
-          saldoMaximoMensual: 10000,
-          limiteGastoMensual: 2000));
-      await _db.cuentasDao.upsertCuenta(CuentasCompanion.insert(
-          nombre: 'Ahorro',
-          saldoActual: 0,
-          saldoMaximoMensual: 10000000,
-          limiteGastoMensual: 10000));
+    // La lógica de inicialización ahora está en SetupScreen
+  }
+
+  Future<void> createAccount(
+      String nombre, double saldoMaximo, double limiteGasto) async {
+    await _db.cuentasDao.upsertCuenta(CuentasCompanion.insert(
+        nombre: nombre,
+        saldoActual: 0,
+        saldoMaximoMensual: saldoMaximo,
+        limiteGastoMensual: limiteGasto));
+  }
+
+  Future<void> createDefaultCategories() async {
+    final categorias = await _db.categoriasDao.allCategorias;
+    if (categorias.isEmpty) {
+      await _db.batch((batch) {
+        batch.insertAll(_db.categorias, defaultIncomeCategories);
+        batch.insertAll(_db.categorias, defaultExpenseCategories);
+      });
     }
   }
 
@@ -548,40 +731,83 @@ class FinanceService {
     return const ListToCsvConverter().convert(rows);
   }
 
-  Future<void> agregarTransferencia(double cantidad, int idCuentaOrigen,
-      int idCuentaDestino, DateTime selectedDate) async {
-    final fecha = selectedDate;
-
-    final cuentaOrigen = await _db.cuentasDao.getCuentaById(idCuentaOrigen);
-    final cuentaDestino = await _db.cuentasDao.getCuentaById(idCuentaDestino);
-
-    if (cuentaOrigen == null || cuentaDestino == null) {
-      Logger().e('Error: Cuenta de origen o destino no encontrada.');
-      return;
+  Future<bool> agregarTransferencia(
+      double cantidad,
+      int idCuentaOrigen,
+      int idCuentaDestino,
+      DateTime selectedDate,
+      {String? concepto}) async {
+    // Get or create expense category
+    var categoriaGasto = await _db.categoriasDao
+        .getCategoryByNameAndType('Traspaso', TipoCategoria.gasto.index);
+    if (categoriaGasto == null) {
+      await _db.categoriasDao.upsertCategoria(
+        CategoriasCompanion.insert(
+          nombre: 'Traspaso',
+          tipo: TipoCategoria.gasto,
+          color: '#808080', // Grey color
+        ),
+      );
+      categoriaGasto = await _db.categoriasDao
+          .getCategoryByNameAndType('Traspaso', TipoCategoria.gasto.index);
     }
 
-    // Debitar de la cuenta de origen
-    await _db.transaccionesDao.insertTransaccion(TransaccionesCompanion.insert(
-      idCuenta: idCuentaOrigen,
-      cantidad: -cantidad, // Negativo porque es un débito
-      tipo: TipoTransaccion.transferencia,
-      fecha: fecha,
-    ));
+    // Get or create income category
+    var categoriaIngreso = await _db.categoriasDao
+        .getCategoryByNameAndType('Traspaso', TipoCategoria.ingreso.index);
+    if (categoriaIngreso == null) {
+      await _db.categoriasDao.upsertCategoria(
+        CategoriasCompanion.insert(
+          nombre: 'Traspaso',
+          tipo: TipoCategoria.ingreso,
+          color: '#808080', // Grey color
+        ),
+      );
+      categoriaIngreso = await _db.categoriasDao
+          .getCategoryByNameAndType('Traspaso', TipoCategoria.ingreso.index);
+    }
 
-    final updatedCuentaOrigen =
-        cuentaOrigen.copyWith(saldoActual: cuentaOrigen.saldoActual - cantidad);
-    await _db.cuentasDao.upsertCuenta(updatedCuentaOrigen.toCompanion(false));
+    if (categoriaGasto == null || categoriaIngreso == null) {
+      Logger().e('No se pudo obtener o crear la categoría "Traspaso".');
+      return false;
+    }
 
-    // Acreditar a la cuenta de destino
-    await _db.transaccionesDao.insertTransaccion(TransaccionesCompanion.insert(
-      idCuenta: idCuentaDestino,
-      cantidad: cantidad, // Positivo porque es un crédito
-      tipo: TipoTransaccion.transferencia,
-      fecha: fecha,
-    ));
+    final gastoSuccess = await agregarGasto(
+      cantidad,
+      concepto ?? 'Traspaso',
+      categoriaGasto.id,
+      idCuentaOrigen,
+      selectedDate,
+    );
 
-    final updatedCuentaDestino = cuentaDestino.copyWith(
-        saldoActual: cuentaDestino.saldoActual + cantidad);
-    await _db.cuentasDao.upsertCuenta(updatedCuentaDestino.toCompanion(false));
+    if (gastoSuccess) {
+      final fecha = selectedDate;
+      final ingresoId =
+          await _db.ingresosDao.insertIngreso(IngresosCompanion.insert(
+        cantidadTotal: cantidad,
+        fecha: fecha,
+        idCategoria: categoriaIngreso.id,
+      ));
+
+      await _db.transaccionesDao
+          .insertTransaccion(TransaccionesCompanion.insert(
+        idCuenta: idCuentaDestino,
+        cantidad: cantidad,
+        tipo: TipoTransaccion.ingreso,
+        fecha: fecha,
+        idIngreso: Value(ingresoId),
+      ));
+
+      final cuentaDestino = await _db.cuentasDao.getCuentaById(idCuentaDestino);
+      if (cuentaDestino != null) {
+        final updatedCuentaDestino = cuentaDestino.copyWith(
+          saldoActual: cuentaDestino.saldoActual + cantidad,
+          ingresoAcumuladoMes: cuentaDestino.ingresoAcumuladoMes + cantidad,
+        );
+        await _db.cuentasDao.upsertCuenta(updatedCuentaDestino.toCompanion(false));
+      }
+    }
+
+    return gastoSuccess;
   }
 }

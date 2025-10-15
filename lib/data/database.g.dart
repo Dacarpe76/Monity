@@ -1856,6 +1856,18 @@ class $TransaccionesProgramadasTable extends TransaccionesProgramadas
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("is_transferencia" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _diaDelMesMeta =
+      const VerificationMeta('diaDelMes');
+  @override
+  late final GeneratedColumn<int> diaDelMes = GeneratedColumn<int>(
+      'dia_del_mes', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _diaDeLaSemanaMeta =
+      const VerificationMeta('diaDeLaSemana');
+  @override
+  late final GeneratedColumn<int> diaDeLaSemana = GeneratedColumn<int>(
+      'dia_de_la_semana', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1869,7 +1881,9 @@ class $TransaccionesProgramadasTable extends TransaccionesProgramadas
         fechaInicio,
         proximaEjecucion,
         fechaFin,
-        isTransferencia
+        isTransferencia,
+        diaDelMes,
+        diaDeLaSemana
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1943,6 +1957,18 @@ class $TransaccionesProgramadasTable extends TransaccionesProgramadas
           isTransferencia.isAcceptableOrUnknown(
               data['is_transferencia']!, _isTransferenciaMeta));
     }
+    if (data.containsKey('dia_del_mes')) {
+      context.handle(
+          _diaDelMesMeta,
+          diaDelMes.isAcceptableOrUnknown(
+              data['dia_del_mes']!, _diaDelMesMeta));
+    }
+    if (data.containsKey('dia_de_la_semana')) {
+      context.handle(
+          _diaDeLaSemanaMeta,
+          diaDeLaSemana.isAcceptableOrUnknown(
+              data['dia_de_la_semana']!, _diaDeLaSemanaMeta));
+    }
     return context;
   }
 
@@ -1978,6 +2004,10 @@ class $TransaccionesProgramadasTable extends TransaccionesProgramadas
           .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha_fin']),
       isTransferencia: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_transferencia'])!,
+      diaDelMes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}dia_del_mes']),
+      diaDeLaSemana: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}dia_de_la_semana']),
     );
   }
 
@@ -2006,6 +2036,8 @@ class TransaccionProgramada extends DataClass
   final DateTime proximaEjecucion;
   final DateTime? fechaFin;
   final bool isTransferencia;
+  final int? diaDelMes;
+  final int? diaDeLaSemana;
   const TransaccionProgramada(
       {required this.id,
       required this.descripcion,
@@ -2018,7 +2050,9 @@ class TransaccionProgramada extends DataClass
       required this.fechaInicio,
       required this.proximaEjecucion,
       this.fechaFin,
-      required this.isTransferencia});
+      required this.isTransferencia,
+      this.diaDelMes,
+      this.diaDeLaSemana});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2049,6 +2083,12 @@ class TransaccionProgramada extends DataClass
       map['fecha_fin'] = Variable<DateTime>(fechaFin);
     }
     map['is_transferencia'] = Variable<bool>(isTransferencia);
+    if (!nullToAbsent || diaDelMes != null) {
+      map['dia_del_mes'] = Variable<int>(diaDelMes);
+    }
+    if (!nullToAbsent || diaDeLaSemana != null) {
+      map['dia_de_la_semana'] = Variable<int>(diaDeLaSemana);
+    }
     return map;
   }
 
@@ -2074,6 +2114,12 @@ class TransaccionProgramada extends DataClass
           ? const Value.absent()
           : Value(fechaFin),
       isTransferencia: Value(isTransferencia),
+      diaDelMes: diaDelMes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(diaDelMes),
+      diaDeLaSemana: diaDeLaSemana == null && nullToAbsent
+          ? const Value.absent()
+          : Value(diaDeLaSemana),
     );
   }
 
@@ -2095,6 +2141,8 @@ class TransaccionProgramada extends DataClass
       proximaEjecucion: serializer.fromJson<DateTime>(json['proximaEjecucion']),
       fechaFin: serializer.fromJson<DateTime?>(json['fechaFin']),
       isTransferencia: serializer.fromJson<bool>(json['isTransferencia']),
+      diaDelMes: serializer.fromJson<int?>(json['diaDelMes']),
+      diaDeLaSemana: serializer.fromJson<int?>(json['diaDeLaSemana']),
     );
   }
   @override
@@ -2116,6 +2164,8 @@ class TransaccionProgramada extends DataClass
       'proximaEjecucion': serializer.toJson<DateTime>(proximaEjecucion),
       'fechaFin': serializer.toJson<DateTime?>(fechaFin),
       'isTransferencia': serializer.toJson<bool>(isTransferencia),
+      'diaDelMes': serializer.toJson<int?>(diaDelMes),
+      'diaDeLaSemana': serializer.toJson<int?>(diaDeLaSemana),
     };
   }
 
@@ -2131,7 +2181,9 @@ class TransaccionProgramada extends DataClass
           DateTime? fechaInicio,
           DateTime? proximaEjecucion,
           Value<DateTime?> fechaFin = const Value.absent(),
-          bool? isTransferencia}) =>
+          bool? isTransferencia,
+          Value<int?> diaDelMes = const Value.absent(),
+          Value<int?> diaDeLaSemana = const Value.absent()}) =>
       TransaccionProgramada(
         id: id ?? this.id,
         descripcion: descripcion ?? this.descripcion,
@@ -2148,6 +2200,9 @@ class TransaccionProgramada extends DataClass
         proximaEjecucion: proximaEjecucion ?? this.proximaEjecucion,
         fechaFin: fechaFin.present ? fechaFin.value : this.fechaFin,
         isTransferencia: isTransferencia ?? this.isTransferencia,
+        diaDelMes: diaDelMes.present ? diaDelMes.value : this.diaDelMes,
+        diaDeLaSemana:
+            diaDeLaSemana.present ? diaDeLaSemana.value : this.diaDeLaSemana,
       );
   TransaccionProgramada copyWithCompanion(
       TransaccionesProgramadasCompanion data) {
@@ -2176,6 +2231,10 @@ class TransaccionProgramada extends DataClass
       isTransferencia: data.isTransferencia.present
           ? data.isTransferencia.value
           : this.isTransferencia,
+      diaDelMes: data.diaDelMes.present ? data.diaDelMes.value : this.diaDelMes,
+      diaDeLaSemana: data.diaDeLaSemana.present
+          ? data.diaDeLaSemana.value
+          : this.diaDeLaSemana,
     );
   }
 
@@ -2193,7 +2252,9 @@ class TransaccionProgramada extends DataClass
           ..write('fechaInicio: $fechaInicio, ')
           ..write('proximaEjecucion: $proximaEjecucion, ')
           ..write('fechaFin: $fechaFin, ')
-          ..write('isTransferencia: $isTransferencia')
+          ..write('isTransferencia: $isTransferencia, ')
+          ..write('diaDelMes: $diaDelMes, ')
+          ..write('diaDeLaSemana: $diaDeLaSemana')
           ..write(')'))
         .toString();
   }
@@ -2211,7 +2272,9 @@ class TransaccionProgramada extends DataClass
       fechaInicio,
       proximaEjecucion,
       fechaFin,
-      isTransferencia);
+      isTransferencia,
+      diaDelMes,
+      diaDeLaSemana);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2227,7 +2290,9 @@ class TransaccionProgramada extends DataClass
           other.fechaInicio == this.fechaInicio &&
           other.proximaEjecucion == this.proximaEjecucion &&
           other.fechaFin == this.fechaFin &&
-          other.isTransferencia == this.isTransferencia);
+          other.isTransferencia == this.isTransferencia &&
+          other.diaDelMes == this.diaDelMes &&
+          other.diaDeLaSemana == this.diaDeLaSemana);
 }
 
 class TransaccionesProgramadasCompanion
@@ -2244,6 +2309,8 @@ class TransaccionesProgramadasCompanion
   final Value<DateTime> proximaEjecucion;
   final Value<DateTime?> fechaFin;
   final Value<bool> isTransferencia;
+  final Value<int?> diaDelMes;
+  final Value<int?> diaDeLaSemana;
   const TransaccionesProgramadasCompanion({
     this.id = const Value.absent(),
     this.descripcion = const Value.absent(),
@@ -2257,6 +2324,8 @@ class TransaccionesProgramadasCompanion
     this.proximaEjecucion = const Value.absent(),
     this.fechaFin = const Value.absent(),
     this.isTransferencia = const Value.absent(),
+    this.diaDelMes = const Value.absent(),
+    this.diaDeLaSemana = const Value.absent(),
   });
   TransaccionesProgramadasCompanion.insert({
     this.id = const Value.absent(),
@@ -2271,6 +2340,8 @@ class TransaccionesProgramadasCompanion
     required DateTime proximaEjecucion,
     this.fechaFin = const Value.absent(),
     this.isTransferencia = const Value.absent(),
+    this.diaDelMes = const Value.absent(),
+    this.diaDeLaSemana = const Value.absent(),
   })  : descripcion = Value(descripcion),
         cantidad = Value(cantidad),
         tipo = Value(tipo),
@@ -2290,6 +2361,8 @@ class TransaccionesProgramadasCompanion
     Expression<DateTime>? proximaEjecucion,
     Expression<DateTime>? fechaFin,
     Expression<bool>? isTransferencia,
+    Expression<int>? diaDelMes,
+    Expression<int>? diaDeLaSemana,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2304,6 +2377,8 @@ class TransaccionesProgramadasCompanion
       if (proximaEjecucion != null) 'proxima_ejecucion': proximaEjecucion,
       if (fechaFin != null) 'fecha_fin': fechaFin,
       if (isTransferencia != null) 'is_transferencia': isTransferencia,
+      if (diaDelMes != null) 'dia_del_mes': diaDelMes,
+      if (diaDeLaSemana != null) 'dia_de_la_semana': diaDeLaSemana,
     });
   }
 
@@ -2319,7 +2394,9 @@ class TransaccionesProgramadasCompanion
       Value<DateTime>? fechaInicio,
       Value<DateTime>? proximaEjecucion,
       Value<DateTime?>? fechaFin,
-      Value<bool>? isTransferencia}) {
+      Value<bool>? isTransferencia,
+      Value<int?>? diaDelMes,
+      Value<int?>? diaDeLaSemana}) {
     return TransaccionesProgramadasCompanion(
       id: id ?? this.id,
       descripcion: descripcion ?? this.descripcion,
@@ -2333,6 +2410,8 @@ class TransaccionesProgramadasCompanion
       proximaEjecucion: proximaEjecucion ?? this.proximaEjecucion,
       fechaFin: fechaFin ?? this.fechaFin,
       isTransferencia: isTransferencia ?? this.isTransferencia,
+      diaDelMes: diaDelMes ?? this.diaDelMes,
+      diaDeLaSemana: diaDeLaSemana ?? this.diaDeLaSemana,
     );
   }
 
@@ -2378,6 +2457,12 @@ class TransaccionesProgramadasCompanion
     if (isTransferencia.present) {
       map['is_transferencia'] = Variable<bool>(isTransferencia.value);
     }
+    if (diaDelMes.present) {
+      map['dia_del_mes'] = Variable<int>(diaDelMes.value);
+    }
+    if (diaDeLaSemana.present) {
+      map['dia_de_la_semana'] = Variable<int>(diaDeLaSemana.value);
+    }
     return map;
   }
 
@@ -2395,7 +2480,9 @@ class TransaccionesProgramadasCompanion
           ..write('fechaInicio: $fechaInicio, ')
           ..write('proximaEjecucion: $proximaEjecucion, ')
           ..write('fechaFin: $fechaFin, ')
-          ..write('isTransferencia: $isTransferencia')
+          ..write('isTransferencia: $isTransferencia, ')
+          ..write('diaDelMes: $diaDelMes, ')
+          ..write('diaDeLaSemana: $diaDeLaSemana')
           ..write(')'))
         .toString();
   }
@@ -3147,6 +3234,14 @@ class $AppSettingsTable extends AppSettings
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(1));
+  static const VerificationMeta _currencyMeta =
+      const VerificationMeta('currency');
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+      'currency', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('EUR'));
   static const VerificationMeta _showBudgetLimitMeta =
       const VerificationMeta('showBudgetLimit');
   @override
@@ -3190,6 +3285,7 @@ class $AppSettingsTable extends AppSettings
   @override
   List<GeneratedColumn> get $columns => [
         id,
+        currency,
         showBudgetLimit,
         showMaxBalance,
         showMonthlySpending,
@@ -3207,6 +3303,10 @@ class $AppSettingsTable extends AppSettings
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('currency')) {
+      context.handle(_currencyMeta,
+          currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta));
     }
     if (data.containsKey('show_budget_limit')) {
       context.handle(
@@ -3243,6 +3343,8 @@ class $AppSettingsTable extends AppSettings
     return AppSetting(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      currency: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}currency'])!,
       showBudgetLimit: attachedDatabase.typeMapping.read(
           DriftSqlType.bool, data['${effectivePrefix}show_budget_limit'])!,
       showMaxBalance: attachedDatabase.typeMapping
@@ -3262,12 +3364,14 @@ class $AppSettingsTable extends AppSettings
 
 class AppSetting extends DataClass implements Insertable<AppSetting> {
   final int id;
+  final String currency;
   final bool showBudgetLimit;
   final bool showMaxBalance;
   final bool showMonthlySpending;
   final bool showProjection;
   const AppSetting(
       {required this.id,
+      required this.currency,
       required this.showBudgetLimit,
       required this.showMaxBalance,
       required this.showMonthlySpending,
@@ -3276,6 +3380,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['currency'] = Variable<String>(currency);
     map['show_budget_limit'] = Variable<bool>(showBudgetLimit);
     map['show_max_balance'] = Variable<bool>(showMaxBalance);
     map['show_monthly_spending'] = Variable<bool>(showMonthlySpending);
@@ -3286,6 +3391,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   AppSettingsCompanion toCompanion(bool nullToAbsent) {
     return AppSettingsCompanion(
       id: Value(id),
+      currency: Value(currency),
       showBudgetLimit: Value(showBudgetLimit),
       showMaxBalance: Value(showMaxBalance),
       showMonthlySpending: Value(showMonthlySpending),
@@ -3298,6 +3404,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AppSetting(
       id: serializer.fromJson<int>(json['id']),
+      currency: serializer.fromJson<String>(json['currency']),
       showBudgetLimit: serializer.fromJson<bool>(json['showBudgetLimit']),
       showMaxBalance: serializer.fromJson<bool>(json['showMaxBalance']),
       showMonthlySpending:
@@ -3310,6 +3417,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'currency': serializer.toJson<String>(currency),
       'showBudgetLimit': serializer.toJson<bool>(showBudgetLimit),
       'showMaxBalance': serializer.toJson<bool>(showMaxBalance),
       'showMonthlySpending': serializer.toJson<bool>(showMonthlySpending),
@@ -3319,12 +3427,14 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
 
   AppSetting copyWith(
           {int? id,
+          String? currency,
           bool? showBudgetLimit,
           bool? showMaxBalance,
           bool? showMonthlySpending,
           bool? showProjection}) =>
       AppSetting(
         id: id ?? this.id,
+        currency: currency ?? this.currency,
         showBudgetLimit: showBudgetLimit ?? this.showBudgetLimit,
         showMaxBalance: showMaxBalance ?? this.showMaxBalance,
         showMonthlySpending: showMonthlySpending ?? this.showMonthlySpending,
@@ -3333,6 +3443,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
       id: data.id.present ? data.id.value : this.id,
+      currency: data.currency.present ? data.currency.value : this.currency,
       showBudgetLimit: data.showBudgetLimit.present
           ? data.showBudgetLimit.value
           : this.showBudgetLimit,
@@ -3352,6 +3463,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   String toString() {
     return (StringBuffer('AppSetting(')
           ..write('id: $id, ')
+          ..write('currency: $currency, ')
           ..write('showBudgetLimit: $showBudgetLimit, ')
           ..write('showMaxBalance: $showMaxBalance, ')
           ..write('showMonthlySpending: $showMonthlySpending, ')
@@ -3361,13 +3473,14 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, showBudgetLimit, showMaxBalance, showMonthlySpending, showProjection);
+  int get hashCode => Object.hash(id, currency, showBudgetLimit, showMaxBalance,
+      showMonthlySpending, showProjection);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AppSetting &&
           other.id == this.id &&
+          other.currency == this.currency &&
           other.showBudgetLimit == this.showBudgetLimit &&
           other.showMaxBalance == this.showMaxBalance &&
           other.showMonthlySpending == this.showMonthlySpending &&
@@ -3376,12 +3489,14 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<int> id;
+  final Value<String> currency;
   final Value<bool> showBudgetLimit;
   final Value<bool> showMaxBalance;
   final Value<bool> showMonthlySpending;
   final Value<bool> showProjection;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
+    this.currency = const Value.absent(),
     this.showBudgetLimit = const Value.absent(),
     this.showMaxBalance = const Value.absent(),
     this.showMonthlySpending = const Value.absent(),
@@ -3389,6 +3504,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
+    this.currency = const Value.absent(),
     this.showBudgetLimit = const Value.absent(),
     this.showMaxBalance = const Value.absent(),
     this.showMonthlySpending = const Value.absent(),
@@ -3396,6 +3512,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
+    Expression<String>? currency,
     Expression<bool>? showBudgetLimit,
     Expression<bool>? showMaxBalance,
     Expression<bool>? showMonthlySpending,
@@ -3403,6 +3520,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (currency != null) 'currency': currency,
       if (showBudgetLimit != null) 'show_budget_limit': showBudgetLimit,
       if (showMaxBalance != null) 'show_max_balance': showMaxBalance,
       if (showMonthlySpending != null)
@@ -3413,12 +3531,14 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
 
   AppSettingsCompanion copyWith(
       {Value<int>? id,
+      Value<String>? currency,
       Value<bool>? showBudgetLimit,
       Value<bool>? showMaxBalance,
       Value<bool>? showMonthlySpending,
       Value<bool>? showProjection}) {
     return AppSettingsCompanion(
       id: id ?? this.id,
+      currency: currency ?? this.currency,
       showBudgetLimit: showBudgetLimit ?? this.showBudgetLimit,
       showMaxBalance: showMaxBalance ?? this.showMaxBalance,
       showMonthlySpending: showMonthlySpending ?? this.showMonthlySpending,
@@ -3431,6 +3551,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
     }
     if (showBudgetLimit.present) {
       map['show_budget_limit'] = Variable<bool>(showBudgetLimit.value);
@@ -3451,6 +3574,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   String toString() {
     return (StringBuffer('AppSettingsCompanion(')
           ..write('id: $id, ')
+          ..write('currency: $currency, ')
           ..write('showBudgetLimit: $showBudgetLimit, ')
           ..write('showMaxBalance: $showMaxBalance, ')
           ..write('showMonthlySpending: $showMonthlySpending, ')
@@ -5603,6 +5727,8 @@ typedef $$TransaccionesProgramadasTableCreateCompanionBuilder
   required DateTime proximaEjecucion,
   Value<DateTime?> fechaFin,
   Value<bool> isTransferencia,
+  Value<int?> diaDelMes,
+  Value<int?> diaDeLaSemana,
 });
 typedef $$TransaccionesProgramadasTableUpdateCompanionBuilder
     = TransaccionesProgramadasCompanion Function({
@@ -5618,6 +5744,8 @@ typedef $$TransaccionesProgramadasTableUpdateCompanionBuilder
   Value<DateTime> proximaEjecucion,
   Value<DateTime?> fechaFin,
   Value<bool> isTransferencia,
+  Value<int?> diaDelMes,
+  Value<int?> diaDeLaSemana,
 });
 
 final class $$TransaccionesProgramadasTableReferences extends BaseReferences<
@@ -5712,6 +5840,12 @@ class $$TransaccionesProgramadasTableFilterComposer
   ColumnFilters<bool> get isTransferencia => $composableBuilder(
       column: $table.isTransferencia,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get diaDelMes => $composableBuilder(
+      column: $table.diaDelMes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get diaDeLaSemana => $composableBuilder(
+      column: $table.diaDeLaSemana, builder: (column) => ColumnFilters(column));
 
   $$CategoriasTableFilterComposer get idCategoria {
     final $$CategoriasTableFilterComposer composer = $composerBuilder(
@@ -5812,6 +5946,13 @@ class $$TransaccionesProgramadasTableOrderingComposer
       column: $table.isTransferencia,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get diaDelMes => $composableBuilder(
+      column: $table.diaDelMes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get diaDeLaSemana => $composableBuilder(
+      column: $table.diaDeLaSemana,
+      builder: (column) => ColumnOrderings(column));
+
   $$CategoriasTableOrderingComposer get idCategoria {
     final $$CategoriasTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -5909,6 +6050,12 @@ class $$TransaccionesProgramadasTableAnnotationComposer
 
   GeneratedColumn<bool> get isTransferencia => $composableBuilder(
       column: $table.isTransferencia, builder: (column) => column);
+
+  GeneratedColumn<int> get diaDelMes =>
+      $composableBuilder(column: $table.diaDelMes, builder: (column) => column);
+
+  GeneratedColumn<int> get diaDeLaSemana => $composableBuilder(
+      column: $table.diaDeLaSemana, builder: (column) => column);
 
   $$CategoriasTableAnnotationComposer get idCategoria {
     final $$CategoriasTableAnnotationComposer composer = $composerBuilder(
@@ -6011,6 +6158,8 @@ class $$TransaccionesProgramadasTableTableManager extends RootTableManager<
             Value<DateTime> proximaEjecucion = const Value.absent(),
             Value<DateTime?> fechaFin = const Value.absent(),
             Value<bool> isTransferencia = const Value.absent(),
+            Value<int?> diaDelMes = const Value.absent(),
+            Value<int?> diaDeLaSemana = const Value.absent(),
           }) =>
               TransaccionesProgramadasCompanion(
             id: id,
@@ -6025,6 +6174,8 @@ class $$TransaccionesProgramadasTableTableManager extends RootTableManager<
             proximaEjecucion: proximaEjecucion,
             fechaFin: fechaFin,
             isTransferencia: isTransferencia,
+            diaDelMes: diaDelMes,
+            diaDeLaSemana: diaDeLaSemana,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6039,6 +6190,8 @@ class $$TransaccionesProgramadasTableTableManager extends RootTableManager<
             required DateTime proximaEjecucion,
             Value<DateTime?> fechaFin = const Value.absent(),
             Value<bool> isTransferencia = const Value.absent(),
+            Value<int?> diaDelMes = const Value.absent(),
+            Value<int?> diaDeLaSemana = const Value.absent(),
           }) =>
               TransaccionesProgramadasCompanion.insert(
             id: id,
@@ -6053,6 +6206,8 @@ class $$TransaccionesProgramadasTableTableManager extends RootTableManager<
             proximaEjecucion: proximaEjecucion,
             fechaFin: fechaFin,
             isTransferencia: isTransferencia,
+            diaDelMes: diaDelMes,
+            diaDeLaSemana: diaDeLaSemana,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -6555,6 +6710,7 @@ typedef $$CreditosTableProcessedTableManager = ProcessedTableManager<
 typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
     Function({
   Value<int> id,
+  Value<String> currency,
   Value<bool> showBudgetLimit,
   Value<bool> showMaxBalance,
   Value<bool> showMonthlySpending,
@@ -6563,6 +6719,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
 typedef $$AppSettingsTableUpdateCompanionBuilder = AppSettingsCompanion
     Function({
   Value<int> id,
+  Value<String> currency,
   Value<bool> showBudgetLimit,
   Value<bool> showMaxBalance,
   Value<bool> showMonthlySpending,
@@ -6580,6 +6737,9 @@ class $$AppSettingsTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get currency => $composableBuilder(
+      column: $table.currency, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get showBudgetLimit => $composableBuilder(
       column: $table.showBudgetLimit,
@@ -6610,6 +6770,9 @@ class $$AppSettingsTableOrderingComposer
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get currency => $composableBuilder(
+      column: $table.currency, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get showBudgetLimit => $composableBuilder(
       column: $table.showBudgetLimit,
       builder: (column) => ColumnOrderings(column));
@@ -6638,6 +6801,9 @@ class $$AppSettingsTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 
   GeneratedColumn<bool> get showBudgetLimit => $composableBuilder(
       column: $table.showBudgetLimit, builder: (column) => column);
@@ -6676,6 +6842,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
               $$AppSettingsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
+            Value<String> currency = const Value.absent(),
             Value<bool> showBudgetLimit = const Value.absent(),
             Value<bool> showMaxBalance = const Value.absent(),
             Value<bool> showMonthlySpending = const Value.absent(),
@@ -6683,6 +6850,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
           }) =>
               AppSettingsCompanion(
             id: id,
+            currency: currency,
             showBudgetLimit: showBudgetLimit,
             showMaxBalance: showMaxBalance,
             showMonthlySpending: showMonthlySpending,
@@ -6690,6 +6858,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
+            Value<String> currency = const Value.absent(),
             Value<bool> showBudgetLimit = const Value.absent(),
             Value<bool> showMaxBalance = const Value.absent(),
             Value<bool> showMonthlySpending = const Value.absent(),
@@ -6697,6 +6866,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
           }) =>
               AppSettingsCompanion.insert(
             id: id,
+            currency: currency,
             showBudgetLimit: showBudgetLimit,
             showMaxBalance: showMaxBalance,
             showMonthlySpending: showMonthlySpending,

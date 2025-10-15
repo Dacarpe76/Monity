@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:monity/providers.dart';
 import 'package:monity/ui/screens/home_screen.dart';
 import 'package:logger/logger.dart';
+import 'package:monity/ui/screens/setup_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   final logger = Logger();
@@ -12,33 +14,41 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   logger.d('WidgetsFlutterBinding initialized');
 
+  final prefs = await SharedPreferences.getInstance();
+  final isSetupComplete = prefs.getBool('setup_complete') ?? false;
+
   // Crea un contenedor de providers para la inicialización
   final container = ProviderContainer();
   logger.d('ProviderContainer created');
 
-  // Inicializa la base de datos y ejecuta tareas de arranque
-  final financeService = container.read(financeServiceProvider);
-  logger.d('FinanceService created');
-  await financeService.initializeDatabase();
-  logger.d('Database initialized');
-  await financeService.handleMonthlyReset();
-  logger.d('Monthly reset handled');
-  await financeService.recalculateMonthlyAccumulated();
-  logger.d('Monthly accumulated recalculated');
-  await financeService.checkAndExecuteScheduledTransactions();
-  logger.d('Scheduled transactions checked');
-  await financeService.checkAndExecuteCreditPayments();
-  logger.d('Credit payments checked');
+  if (isSetupComplete) {
+    // Usuario existente, ejecutar tareas de arranque
+    final financeService = container.read(financeServiceProvider);
+    logger.d('FinanceService created for existing user');
+    await financeService.handleMonthlyReset();
+    logger.d('Monthly reset handled');
+    await financeService.recalculateMonthlyAccumulated();
+    logger.d('Monthly accumulated recalculated');
+    await financeService.checkAndExecuteScheduledIncomes();
+    logger.d('Scheduled incomes checked');
+    await financeService.checkAndExecuteScheduledTransfers();
+    logger.d('Scheduled transfers checked');
+    await financeService.checkAndExecuteScheduledExpenses();
+    logger.d('Scheduled expenses checked');
+    await financeService.checkAndExecuteCreditPayments();
+    logger.d('Credit payments checked');
+  }
 
   runApp(UncontrolledProviderScope(
     container: container,
-    child: const MyApp(),
+    child: MyApp(isSetupComplete: isSetupComplete),
   ));
   logger.d('runApp called');
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isSetupComplete;
+  const MyApp({super.key, required this.isSetupComplete});
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +69,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
       ),
-      home: const HomeScreen(),
+      home: isSetupComplete ? const HomeScreen() : const SetupScreen(),
     );
   }
 }

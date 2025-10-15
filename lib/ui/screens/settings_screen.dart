@@ -3,66 +3,166 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:monity/data/currencies.dart';
 import 'package:monity/data/database.dart';
 import 'package:monity/providers.dart';
 import 'package:monity/ui/screens/add_category_screen.dart';
 import 'package:csv/csv.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:monity/ui/utils/currency_formatter.dart';
 
 import 'dart:io';
 import 'dart:convert';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  TipoCategoria _selectedCategoryType = TipoCategoria.ingreso;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuración'),
       ),
-      body: ListView(
-        children: [
-          _buildDisplaySettingsSection(ref, context),
-          const Divider(),
-          _buildCuentasSection(ref, context),
-          const Divider(),
-          _buildCategoriasSection(ref, context, TipoCategoria.ingreso),
-          const Divider(),
-          _buildCategoriasSection(ref, context, TipoCategoria.gasto),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: const Text('Añadir nueva categoría'),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const AddCategoryScreen(),
+      body: SafeArea(
+        child: ListView(
+          children: [
+            ExpansionTile(
+              title: const Text('General',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              children: [_buildGeneralSettingsSection(ref, context)],
+            ),
+            const Divider(),
+            ExpansionTile(
+              title: const Text('Pantalla Principal',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              children: [_buildDisplaySettingsSection(ref, context)],
+            ),
+            const Divider(),
+            ExpansionTile(
+              title: const Text('Cuentas',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              children: [_buildCuentasSection(ref, context)],
+            ),
+            const Divider(),
+            ExpansionTile(
+              title: const Text('Categorías',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              children: [
+                Column(
+                  children: [
+                    ToggleButtons(
+                      isSelected: [
+                        _selectedCategoryType == TipoCategoria.ingreso,
+                        _selectedCategoryType == TipoCategoria.gasto,
+                      ],
+                      onPressed: (index) {
+                        setState(() {
+                          _selectedCategoryType =
+                              index == 0 ? TipoCategoria.ingreso : TipoCategoria.gasto;
+                        });
+                      },
+                      children: const [
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text('Ingreso'),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text('Gasto'),
+                        ),
+                      ],
+                    ),
+                    _buildCategoriasSection(ref, context, _selectedCategoryType),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.add),
+                      title: const Text('Añadir nueva categoría'),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => AddCategoryScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                )
+              ],
+            ),
+            const Divider(),
+            ExpansionTile(
+              title: const Text('Avanzado',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.download),
+                  title: const Text('Exportar transacciones a CSV (Nuevo)'),
+                  onTap: () => _exportCsvNew(ref, context),
                 ),
-              );
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.download),
-            title: const Text('Exportar transacciones a CSV'),
-            onTap: () => _exportCsv(ref, context),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.upload),
-            title: const Text('Importar transacciones desde CSV'),
-            onTap: () => _importCsv(ref, context),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.delete_forever),
-            title: const Text('Borrar todos los datos'),
-            onTap: () => _showResetConfirmationDialog(ref, context),
-          ),
-        ],
+                ListTile(
+                  leading: const Icon(Icons.download),
+                  title: const Text('Exportar transacciones a CSV (Antiguo)'),
+                  onTap: () => _exportCsvOld(ref, context),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.upload),
+                  title: const Text('Importar transacciones desde CSV (Nuevo)'),
+                  onTap: () => _importCsvNew(ref, context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.upload),
+                  title: const Text('Importar transacciones desde CSV (Antiguo)'),
+                  onTap: () => _importCsvOld(ref, context),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.delete_forever),
+                  title: const Text('Borrar todos los datos'),
+                  onTap: () => _showResetConfirmationDialog(ref, context),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildGeneralSettingsSection(WidgetRef ref, BuildContext context) {
+    final settings = ref.watch(appSettingsProvider);
+    return settings.when(
+      data: (appSettings) {
+        return ListTile(
+          title: const Text('Moneda'),
+          trailing: DropdownButton<String>(
+            value: appSettings.currency,
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                ref.read(appSettingsDaoProvider).updateSettings(
+                      AppSettingsCompanion(currency: drift.Value(newValue)),
+                    );
+              }
+            },
+            items: supportedCurrencies.map<DropdownMenuItem<String>>((Currency currency) {
+              return DropdownMenuItem<String>(
+                value: currency.code,
+                child: Text('${currency.name} (${currency.symbol})'),
+              );
+            }).toList(),
+          ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
     );
   }
 
@@ -73,11 +173,6 @@ class SettingsScreen extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('Pantalla Principal',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
             SwitchListTile(
               title: const Text('Mostrar límite de presupuesto'),
               value: appSettings.showBudgetLimit,
@@ -125,6 +220,8 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildCuentasSection(WidgetRef ref, BuildContext context) {
     final cuentasStream = ref.watch(cuentasDaoProvider).watchAllCuentas();
+    final currency = ref.watch(currencyProvider);
+
     return StreamBuilder<List<Cuenta>>(
       stream: cuentasStream,
       builder: (context, snapshot) {
@@ -145,10 +242,15 @@ class SettingsScreen extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('Cuentas',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Recuerda que el orden de la cuentas es importante',
+                style: TextStyle(
+                    color: Colors.orange.shade800,
+                    fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
             ReorderableListView(
               shrinkWrap: true,
@@ -173,7 +275,7 @@ class SettingsScreen extends ConsumerWidget {
                     key: ValueKey(cuenta.id),
                     title: Text(cuenta.nombre),
                     subtitle: Text(
-                        'Saldo: ${cuenta.saldoActual} / Límite: ${cuenta.limiteGastoMensual} / Máximo: ${cuenta.saldoMaximoMensual}'),
+                        'Saldo: ${formatCurrency(cuenta.saldoActual, currency.symbol)} / Límite: ${formatCurrency(cuenta.limiteGastoMensual, currency.symbol)} / Máximo: ${formatCurrency(cuenta.saldoMaximoMensual, currency.symbol)}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -219,20 +321,7 @@ class SettingsScreen extends ConsumerWidget {
           );
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Categorías de ${tipo.toString().split('.').last}',
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            _buildCategoriesList(ref, context, categories),
-          ],
-        );
+        return _buildCategoriesList(ref, context, categories);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('Error: $error')),
@@ -338,6 +427,7 @@ class SettingsScreen extends ConsumerWidget {
                 orden: drift.Value((await dao.allCuentas).length),
               );
               await dao.upsertCuenta(newAccount);
+              if (!context.mounted) return;
               Navigator.of(context).pop();
             },
             child: const Text('Guardar'),
@@ -404,7 +494,6 @@ class SettingsScreen extends ConsumerWidget {
               final newLimiteGasto =
                   double.tryParse(limiteGastoController.text) ??
                       cuenta.limiteGastoMensual;
-
               final updatedCuenta = cuenta.copyWith(
                 nombre: newNombre,
                 saldoActual: newSaldo,
@@ -414,6 +503,7 @@ class SettingsScreen extends ConsumerWidget {
               await ref
                   .read(cuentasDaoProvider)
                   .upsertCuenta(updatedCuenta.toCompanion(true));
+              if (!context.mounted) return;
               Navigator.of(context).pop();
             },
             child: const Text('Guardar'),
@@ -438,6 +528,7 @@ class SettingsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               await ref.read(cuentasDaoProvider).deleteCuenta(cuenta.id);
+              if (!context.mounted) return;
               Navigator.of(context).pop();
             },
             child: const Text('Eliminar'),
@@ -536,9 +627,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () async {
-              final colorString =
-                  '#${selectedColor.value.toRadixString(16).substring(2)}'
-                      .toUpperCase();
+              final colorString = '#${selectedColor.value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
               final updatedCategory = category.copyWith(
                 nombre: nombreController.text,
                 tipo: tipo,
@@ -547,6 +636,7 @@ class SettingsScreen extends ConsumerWidget {
               await ref
                   .read(categoriasDaoProvider)
                   .upsertCategoria(updatedCategory.toCompanion(true));
+              if (!context.mounted) return;
               Navigator.of(context).pop();
             },
             child: const Text('Guardar'),
@@ -556,23 +646,21 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _importCsv(WidgetRef ref, BuildContext context) async {
+  void _importCsvOld(WidgetRef ref, BuildContext context) async {
+    final bool currentContextMounted = context.mounted;
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles();
-
       if (result != null) {
         File file = File(result.files.single.path!);
         final content = await file.readAsString(encoding: Latin1Codec());
         final List<List<dynamic>> rows =
             const CsvToListConverter().convert(content);
         rows.removeAt(0); // Remove header
-
         final cuentasDao = ref.read(cuentasDaoProvider);
         final categoriasDao = ref.read(categoriasDaoProvider);
         final gastosDao = ref.read(gastosDaoProvider);
         final ingresosDao = ref.read(ingresosDaoProvider);
         final transaccionesDao = ref.read(transaccionesDaoProvider);
-
         for (final row in rows) {
           final fecha = DateTime.parse(row[1]);
           final cuentaNombre = row[2].toString();
@@ -580,7 +668,6 @@ class SettingsScreen extends ConsumerWidget {
           final cantidad = double.parse(row[4].toString());
           final concepto = row[5].toString();
           final categoriaNombre = row[6].toString();
-
           var cuenta = await (cuentasDao.select(cuentasDao.cuentas)
                 ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
               .getSingleOrNull();
@@ -597,7 +684,6 @@ class SettingsScreen extends ConsumerWidget {
                   ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
                 .getSingleOrNull();
           }
-
           final tipo = tipoString == 'ingreso'
               ? TipoCategoria.ingreso
               : TipoCategoria.gasto;
@@ -613,7 +699,6 @@ class SettingsScreen extends ConsumerWidget {
             categoria = await categoriasDao.getCategoryByNameAndType(
                 categoriaNombre, tipo.index);
           }
-
           if (tipo == TipoCategoria.gasto) {
             final gasto = GastosCompanion.insert(
               cantidad: cantidad,
@@ -622,7 +707,6 @@ class SettingsScreen extends ConsumerWidget {
               idCategoria: categoria!.id,
             );
             final gastoId = await gastosDao.insertGasto(gasto);
-
             final transaccion = TransaccionesCompanion.insert(
               idCuenta: cuenta!.id,
               cantidad: cantidad,
@@ -638,7 +722,6 @@ class SettingsScreen extends ConsumerWidget {
               idCategoria: categoria!.id,
             );
             final ingresoId = await ingresosDao.insertIngreso(ingreso);
-
             final transaccion = TransaccionesCompanion.insert(
               idCuenta: cuenta!.id,
               cantidad: cantidad,
@@ -648,52 +731,269 @@ class SettingsScreen extends ConsumerWidget {
             );
             await transaccionesDao.insertTransaccion(transaccion);
           }
-
           final updatedCuenta = cuenta.copyWith(
             saldoActual: cuenta.saldoActual + cantidad,
           );
           await cuentasDao.upsertCuenta(updatedCuenta.toCompanion(true));
         }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('CSV importado correctamente')),
-        );
-      } else {
-        // User canceled the picker
+        if (!currentContextMounted) return;
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('CSV importado correctamente')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al importar el CSV: $e')),
-      );
+      if (!currentContextMounted) return;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al importar el CSV: $e')),
+        );
+      }
     }
   }
 
-  void _exportCsv(WidgetRef ref, BuildContext context) async {
+  void _exportCsvOld(WidgetRef ref, BuildContext context) async {
     final transactions =
         await ref.read(transaccionesDaoProvider).allTransacciones;
+    final cuentas = await ref.read(cuentasDaoProvider).allCuentas;
+    final categorias = await ref.read(categoriasDaoProvider).allCategorias;
+    final gastos = await ref.read(gastosDaoProvider).allGastos;
+    final ingresos = await ref.read(ingresosDaoProvider).allIngresos;
+
+    final cuentasMap = {for (var c in cuentas) c.id: c};
+    final categoriasMap = {for (var c in categorias) c.id: c};
+    final gastosMap = {for (var g in gastos) g.id: g};
+    final ingresosMap = {for (var i in ingresos) i.id: i};
+
     List<List<dynamic>> rows = [];
     rows.add(
-        ['ID', 'Fecha', 'Tipo', 'Cantidad', 'Concepto', 'Categoria', 'Cuenta']);
+        ['ID', 'Fecha', 'Cuenta', 'Tipo', 'Cantidad', 'Concepto', 'Categoria']);
 
     for (var tx in transactions) {
+      final cuenta = cuentasMap[tx.idCuenta];
+      String concepto = '';
+      String categoriaNombre = '';
+
+      if (tx.tipo == TipoTransaccion.gasto && tx.idGasto != null) {
+        final gasto = gastosMap[tx.idGasto];
+        if (gasto != null) {
+          concepto = gasto.concepto;
+          final categoria = categoriasMap[gasto.idCategoria];
+          if (categoria != null) {
+            categoriaNombre = categoria.nombre;
+          }
+        }
+      } else if (tx.tipo == TipoTransaccion.ingreso && tx.idIngreso != null) {
+        final ingreso = ingresosMap[tx.idIngreso];
+        if (ingreso != null) {
+          final categoria = categoriasMap[ingreso.idCategoria];
+          if (categoria != null) {
+            categoriaNombre = categoria.nombre;
+          }
+        }
+      }
+
       rows.add([
         tx.id,
         tx.fecha.toIso8601String(),
+        cuenta?.nombre ?? 'N/A',
         tx.tipo.toString(),
         tx.cantidad,
-        tx.idGasto,
-        tx.idIngreso,
-        tx.idCuenta,
+        concepto,
+        categoriaNombre,
       ]);
     }
+    String csv = const ListToCsvConverter().convert(rows);
+    final directory = await getApplicationDocumentsDirectory();
+    final path = "${directory.path}/monity_transactions_old.csv";
+    final file = File(path);
+    await file.writeAsString(csv, encoding: Latin1Codec());
+    if (!context.mounted) return;
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path)],
+        text: 'Transacciones de Monity',
+        subject: 'Monity Transactions',
+        sharePositionOrigin: Rect.fromLTWH(
+            0, 0, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height / 2),
+      ),
+    );
+  }
 
+  void _importCsvNew(WidgetRef ref, BuildContext context) async {
+    final bool currentContextMounted = context.mounted;
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      if (result != null) {
+        File file = File(result.files.single.path!);
+        final content = await file.readAsString(encoding: utf8);
+        final List<List<dynamic>> rows =
+            const CsvToListConverter().convert(content);
+        rows.removeAt(0); // Remove header
+        final cuentasDao = ref.read(cuentasDaoProvider);
+        final categoriasDao = ref.read(categoriasDaoProvider);
+        final gastosDao = ref.read(gastosDaoProvider);
+        final ingresosDao = ref.read(ingresosDaoProvider);
+        final transaccionesDao = ref.read(transaccionesDaoProvider);
+        for (final row in rows) {
+          final fecha = DateTime.parse(row[1]);
+          final cuentaNombre = row[2].toString();
+          final tipoString = row[3].toString().split('.').last;
+          final cantidad = double.parse(row[4].toString());
+          final concepto = row[5].toString();
+          final categoriaNombre = row[6].toString();
+          var cuenta = await (cuentasDao.select(cuentasDao.cuentas)
+                ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
+              .getSingleOrNull();
+          if (cuenta == null) {
+            final newAccount = CuentasCompanion.insert(
+              nombre: cuentaNombre,
+              saldoActual: 0,
+              saldoMaximoMensual: 1000,
+              limiteGastoMensual: 500,
+              orden: drift.Value((await cuentasDao.allCuentas).length),
+            );
+            await cuentasDao.upsertCuenta(newAccount);
+            cuenta = await (cuentasDao.select(cuentasDao.cuentas)
+                  ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
+                .getSingleOrNull();
+          }
+          final tipo = tipoString == 'ingreso'
+              ? TipoCategoria.ingreso
+              : TipoCategoria.gasto;
+          var categoria = await categoriasDao.getCategoryByNameAndType(
+              categoriaNombre, tipo.index);
+          if (categoria == null) {
+            final newCategory = CategoriasCompanion.insert(
+              nombre: categoriaNombre,
+              tipo: tipo,
+              color: '#FF0000',
+            );
+            await categoriasDao.upsertCategoria(newCategory);
+            categoria = await categoriasDao.getCategoryByNameAndType(
+                categoriaNombre, tipo.index);
+          }
+          if (tipo == TipoCategoria.gasto) {
+            final gasto = GastosCompanion.insert(
+              cantidad: cantidad,
+              concepto: concepto,
+              fecha: fecha,
+              idCategoria: categoria!.id,
+            );
+            final gastoId = await gastosDao.insertGasto(gasto);
+            final transaccion = TransaccionesCompanion.insert(
+              idCuenta: cuenta!.id,
+              cantidad: cantidad,
+              tipo: TipoTransaccion.gasto,
+              fecha: fecha,
+              idGasto: drift.Value(gastoId),
+            );
+            await transaccionesDao.insertTransaccion(transaccion);
+          } else {
+            final ingreso = IngresosCompanion.insert(
+              cantidadTotal: cantidad,
+              fecha: fecha,
+              idCategoria: categoria!.id,
+            );
+            final ingresoId = await ingresosDao.insertIngreso(ingreso);
+            final transaccion = TransaccionesCompanion.insert(
+              idCuenta: cuenta!.id,
+              cantidad: cantidad,
+              tipo: TipoTransaccion.ingreso,
+              fecha: fecha,
+              idIngreso: drift.Value(ingresoId),
+            );
+            await transaccionesDao.insertTransaccion(transaccion);
+          }
+          final updatedCuenta = cuenta.copyWith(
+            saldoActual: cuenta.saldoActual + cantidad,
+          );
+          await cuentasDao.upsertCuenta(updatedCuenta.toCompanion(true));
+        }
+        if (!currentContextMounted) return;
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('CSV importado correctamente')),
+          );
+        }
+      }
+    } catch (e) {
+      if (!currentContextMounted) return;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al importar el CSV: $e')),
+        );
+      }
+    }
+  }
+
+  void _exportCsvNew(WidgetRef ref, BuildContext context) async {
+    final transactions =
+        await ref.read(transaccionesDaoProvider).allTransacciones;
+    final cuentas = await ref.read(cuentasDaoProvider).allCuentas;
+    final categorias = await ref.read(categoriasDaoProvider).allCategorias;
+    final gastos = await ref.read(gastosDaoProvider).allGastos;
+    final ingresos = await ref.read(ingresosDaoProvider).allIngresos;
+
+    final cuentasMap = {for (var c in cuentas) c.id: c};
+    final categoriasMap = {for (var c in categorias) c.id: c};
+    final gastosMap = {for (var g in gastos) g.id: g};
+    final ingresosMap = {for (var i in ingresos) i.id: i};
+
+    List<List<dynamic>> rows = [];
+    rows.add(
+        ['ID', 'Fecha', 'Cuenta', 'Tipo', 'Cantidad', 'Concepto', 'Categoria']);
+
+    for (var tx in transactions) {
+      final cuenta = cuentasMap[tx.idCuenta];
+      String concepto = '';
+      String categoriaNombre = '';
+
+      if (tx.tipo == TipoTransaccion.gasto && tx.idGasto != null) {
+        final gasto = gastosMap[tx.idGasto];
+        if (gasto != null) {
+          concepto = gasto.concepto;
+          final categoria = categoriasMap[gasto.idCategoria];
+          if (categoria != null) {
+            categoriaNombre = categoria.nombre;
+          }
+        }
+      } else if (tx.tipo == TipoTransaccion.ingreso && tx.idIngreso != null) {
+        final ingreso = ingresosMap[tx.idIngreso];
+        if (ingreso != null) {
+          final categoria = categoriasMap[ingreso.idCategoria];
+          if (categoria != null) {
+            categoriaNombre = categoria.nombre;
+          }
+        }
+      }
+
+      rows.add([
+        tx.id,
+        tx.fecha.toIso8601String(),
+        cuenta?.nombre ?? 'N/A',
+        tx.tipo.toString(),
+        tx.cantidad,
+        concepto,
+        categoriaNombre,
+      ]);
+    }
     String csv = const ListToCsvConverter().convert(rows);
     final directory = await getApplicationDocumentsDirectory();
     final path = "${directory.path}/monity_transactions.csv";
     final file = File(path);
-    await file.writeAsString(csv);
-
-    await Share.shareXFiles([XFile(path)], text: 'Transacciones de Monity');
+    await file.writeAsString(csv, encoding: utf8);
+    if (!context.mounted) return;
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path)],
+        text: 'Transacciones de Monity',
+        subject: 'Monity Transactions',
+        sharePositionOrigin: Rect.fromLTWH(
+            0, 0, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height / 2),
+      ),
+    );
   }
 
   void _showResetConfirmationDialog(WidgetRef ref, BuildContext context) {
@@ -715,6 +1015,7 @@ class SettingsScreen extends ConsumerWidget {
               child: const Text('Resetear'),
               onPressed: () async {
                 await ref.read(databaseProvider).resetDatabase();
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
               },
             ),

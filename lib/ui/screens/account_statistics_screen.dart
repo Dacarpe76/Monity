@@ -35,109 +35,111 @@ class AccountStatisticsScreen extends ConsumerWidget {
         title: Text('Estadísticas de ${cuenta.nombre}'),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                ToggleButtons(
-                  isSelected: [
-                    visualizationType == 0,
-                    visualizationType == 1,
-                    visualizationType == 2,
-                  ],
-                  onPressed: (index) {
-                    ref.read(visualizationTypeProvider.notifier).state = index;
-                  },
-                  children: const [
-                    Icon(Icons.list),
-                    Icon(Icons.bar_chart),
-                    Icon(Icons.pie_chart),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ToggleButtons(
-                  isSelected: [
-                    timeRange == 0,
-                    timeRange == 1,
-                    timeRange == 2,
-                  ],
-                  onPressed: (index) {
-                    ref.read(timeRangeProvider.notifier).state = index;
-                  },
-                  children: const [
-                    Text('Mensual'),
-                    Text('Anual'),
-                    Text('Total'),
-                  ],
-                ),
-              ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  ToggleButtons(
+                    isSelected: [
+                      visualizationType == 0,
+                      visualizationType == 1,
+                      visualizationType == 2,
+                    ],
+                    onPressed: (index) {
+                      ref.read(visualizationTypeProvider.notifier).state = index;
+                    },
+                    children: const [
+                      Icon(Icons.list),
+                      Icon(Icons.bar_chart),
+                      Icon(Icons.pie_chart),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ToggleButtons(
+                    isSelected: [
+                      timeRange == 0,
+                      timeRange == 1,
+                      timeRange == 2,
+                    ],
+                    onPressed: (index) {
+                      ref.read(timeRangeProvider.notifier).state = index;
+                    },
+                    children: const [
+                      Text('Mensual'),
+                      Text('Anual'),
+                      Text('Total'),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: StreamBuilder<List<DetailedTransaction>>(
-              stream: allTransaccionesStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                final allTransactions = snapshot.data ?? [];
-                List<DetailedTransaction> filteredTransactions;
-
-                final now = DateTime.now();
-                if (timeRange == 0) { // Monthly
-                  filteredTransactions = allTransactions.where((t) => t.transaccion.fecha.year == now.year && t.transaccion.fecha.month == now.month).toList();
-                } else if (timeRange == 1) { // Annual
-                  filteredTransactions = allTransactions.where((t) => t.transaccion.fecha.year == now.year).toList();
-                } else { // Total
-                  filteredTransactions = allTransactions;
-                }
-
-                final expenses = filteredTransactions
-                    .where((t) => t.transaccion.tipo == TipoTransaccion.gasto)
-                    .toList();
-
-                if (expenses.isEmpty) {
-                  return const Center(
-                    child: Text('No hay gastos para esta cuenta en el período seleccionado.'),
-                  );
-                }
-
-                final Map<Categoria, double> categoryExpenses = {};
-                for (var expense in expenses) {
-                  if (expense.categoria != null) {
-                    final categoria = expense.categoria!;
-                    final amount = expense.transaccion.cantidad.abs();
-                    categoryExpenses.update(categoria, (value) => value + amount,
-                        ifAbsent: () => amount);
+            Expanded(
+              child: StreamBuilder<List<DetailedTransaction>>(
+                stream: allTransaccionesStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
                   }
-                }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
 
-                if (categoryExpenses.isEmpty) {
-                  return const Center(
-                    child: Text('No hay gastos categorizados para esta cuenta en el período seleccionado.'),
-                  );
-                }
+                  final allTransactions = snapshot.data ?? [];
+                  List<DetailedTransaction> filteredTransactions;
 
-                final totalExpense = categoryExpenses.values.fold(0.0, (prev, amount) => prev + amount);
+                  final now = DateTime.now();
+                  if (timeRange == 0) { // Monthly
+                    filteredTransactions = allTransactions.where((t) => t.transaccion.fecha.year == now.year && t.transaccion.fecha.month == now.month).toList();
+                  } else if (timeRange == 1) { // Annual
+                    filteredTransactions = allTransactions.where((t) => t.transaccion.fecha.year == now.year).toList();
+                  } else { // Total
+                    filteredTransactions = allTransactions;
+                  }
 
-                final sortedCategories = categoryExpenses.entries.toList()
-                  ..sort((a, b) => b.value.compareTo(a.value));
+                  final expenses = filteredTransactions
+                      .where((t) => t.transaccion.tipo == TipoTransaccion.gasto)
+                      .toList();
 
-                if (visualizationType == 0) {
-                  return _buildListView(sortedCategories, totalExpense);
-                } else {
-                  return _buildChart(sortedCategories, totalExpense, visualizationType);
-                }
-              },
+                  if (expenses.isEmpty) {
+                    return const Center(
+                      child: Text('No hay gastos para esta cuenta en el período seleccionado.'),
+                    );
+                  }
+
+                  final Map<Categoria, double> categoryExpenses = {};
+                  for (var expense in expenses) {
+                    if (expense.categoria != null) {
+                      final categoria = expense.categoria!;
+                      final amount = expense.transaccion.cantidad.abs();
+                      categoryExpenses.update(categoria, (value) => value + amount,
+                          ifAbsent: () => amount);
+                    }
+                  }
+
+                  if (categoryExpenses.isEmpty) {
+                    return const Center(
+                      child: Text('No hay gastos categorizados para esta cuenta en el período seleccionado.'),
+                    );
+                  }
+
+                  final totalExpense = categoryExpenses.values.fold(0.0, (prev, amount) => prev + amount);
+
+                  final sortedCategories = categoryExpenses.entries.toList()
+                    ..sort((a, b) => b.value.compareTo(a.value));
+
+                  if (visualizationType == 0) {
+                    return _buildListView(sortedCategories, totalExpense);
+                  } else {
+                    return _buildChart(sortedCategories, totalExpense, visualizationType);
+                  }
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -223,7 +225,7 @@ class AccountStatisticsScreen extends ConsumerWidget {
 
     if (visualizationType == 1) {
       return SfCartesianChart(
-        primaryXAxis: CategoryAxis(),
+        primaryXAxis: CategoryAxis(isVisible: false),
         primaryYAxis: NumericAxis(numberFormat: NumberFormat.currency(locale: 'es_ES', symbol: '€')),
         series: <CartesianSeries<_ChartData, String>>[
           BarSeries<_ChartData, String>(
@@ -233,11 +235,11 @@ class AccountStatisticsScreen extends ConsumerWidget {
             pointColorMapper: (_ChartData data, _) => data.color,
             dataLabelSettings: DataLabelSettings(
               isVisible: true,
-              labelAlignment: ChartDataLabelAlignment.top,
               builder: (dynamic data, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
                 return Text(
-                  '${data.x}: ${NumberFormat.currency(locale: 'es_ES', symbol: '€').format(data.y)}',
+                  '${data.x}\n${NumberFormat.currency(locale: 'es_ES', symbol: '€').format(data.y)}',
                   style: const TextStyle(fontSize: 10),
+                  textAlign: TextAlign.center,
                 );
               },
             ),
@@ -253,8 +255,11 @@ class AccountStatisticsScreen extends ConsumerWidget {
             xValueMapper: (_ChartData data, _) => data.x,
             yValueMapper: (_ChartData data, _) => data.y,
             pointColorMapper: (_ChartData data, _) => data.color,
-            dataLabelMapper: (_ChartData data, _) => '${(data.y / totalExpense * 100).toStringAsFixed(1)}%',
-            dataLabelSettings: const DataLabelSettings(isVisible: true),
+            dataLabelMapper: (_ChartData data, _) => '${data.x}\n${(data.y / totalExpense * 100).toStringAsFixed(1)}%',
+            dataLabelSettings: const DataLabelSettings(
+              isVisible: true,
+              labelPosition: ChartDataLabelPosition.outside,
+            ),
           )
         ],
       );

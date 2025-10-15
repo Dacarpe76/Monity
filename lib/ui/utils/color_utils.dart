@@ -34,3 +34,26 @@ Color getCardBackgroundColor(double gastoAcumulado, double limiteGasto) {
   }
   return Colors.green.shade200;
 }
+
+Color getGastoProgressColor(double percentage) {
+  // Asegurarse de que el porcentaje no sea negativo
+  percentage = percentage.clamp(0.0, double.infinity);
+
+  if (percentage < 0.5) {
+    // De 0% a 49.9...% es verde
+    return Colors.green;
+  } else if (percentage < 0.8) {
+    // De 50% a 79.9...% transiciona de verde a azul
+    // Normalizamos el valor de t entre 0.0 y 1.0 para el rango [0.5, 0.8)
+    final t = (percentage - 0.5) / (0.8 - 0.5);
+    return Color.lerp(Colors.green, Colors.blue, t)!;
+  } else if (percentage <= 1.0) {
+    // De 80% a 100% transiciona de azul a rojo
+    // Normalizamos el valor de t entre 0.0 y 1.0 para el rango [0.8, 1.0]
+    final t = (percentage - 0.8) / (1.0 - 0.8);
+    return Color.lerp(Colors.blue, Colors.red, t)!;
+  } else {
+    // Más de 100% es rojo
+    return Colors.red;
+  }
+}

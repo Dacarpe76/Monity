@@ -81,201 +81,203 @@ class _AddScheduledTransactionScreenState
       appBar: AppBar(
         title: const Text('Añadir Transacción Programada'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _descripcionController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Campo requerido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _cantidadController,
-                decoration: const InputDecoration(labelText: 'Cantidad'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Campo requerido';
-                  if (double.tryParse(value) == null) return 'Número inválido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<TipoTransaccion>(
-                initialValue: _selectedTipo,
-                decoration:
-                    const InputDecoration(labelText: 'Tipo de Transacción'),
-                items: TipoTransaccion.values.map((type) {
-                  return DropdownMenuItem(
-                      value: type,
-                      child: Text(type.toString().split('.').last));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedTipo = value!;
-                    _selectedCategoriaId =
-                        null; // Reset category when type changes
-                    _selectedCuentaDestinoId =
-                        null; // Reset destination account for non-transfers
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              // Category dropdown
-              StreamBuilder<List<Categoria>>(
-                stream: categoriasStream,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const CircularProgressIndicator();
-                  }
-                  List<Categoria> filteredCategories = [];
-                  if (_selectedTipo == TipoTransaccion.ingreso) {
-                    filteredCategories = snapshot.data!
-                        .where((c) => c.tipo == TipoCategoria.ingreso)
-                        .toList();
-                  } else if (_selectedTipo == TipoTransaccion.gasto) {
-                    filteredCategories = snapshot.data!
-                        .where((c) => c.tipo == TipoCategoria.gasto)
-                        .toList();
-                  }
-                  return DropdownButtonFormField<int>(
-                    initialValue: _selectedCategoriaId,
-                    decoration: const InputDecoration(labelText: 'Categoría'),
-                    items: filteredCategories.map((cat) {
-                      return DropdownMenuItem(
-                          value: cat.id, child: Text(cat.nombre));
-                    }).toList(),
-                    onChanged: (value) =>
-                        setState(() => _selectedCategoriaId = value),
-                    validator: (value) {
-                      if (_selectedTipo != TipoTransaccion.transferencia &&
-                          value == null) {
-                        return 'Seleccione una categoría';
-                      }
-                      return null;
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              // Source Account dropdown
-              StreamBuilder<List<Cuenta>>(
-                stream: cuentasStream,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const CircularProgressIndicator();
-                  }
-                  return DropdownButtonFormField<int>(
-                    initialValue: _selectedCuentaOrigenId,
-                    decoration:
-                        const InputDecoration(labelText: 'Cuenta de Origen'),
-                    items: snapshot.data!.map((cuenta) {
-                      return DropdownMenuItem(
-                          value: cuenta.id, child: Text(cuenta.nombre));
-                    }).toList(),
-                    onChanged: (value) =>
-                        setState(() => _selectedCuentaOrigenId = value),
-                    validator: (value) => value == null
-                        ? 'Seleccione una cuenta de origen'
-                        : null,
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              // Destination Account dropdown (only for transfers)
-              if (_selectedTipo == TipoTransaccion.transferencia)
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _descripcionController,
+                  decoration: const InputDecoration(labelText: 'Descripción'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Campo requerido';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _cantidadController,
+                  decoration: const InputDecoration(labelText: 'Cantidad'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Campo requerido';
+                    if (double.tryParse(value) == null) return 'Número inválido';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<TipoTransaccion>(
+                  initialValue: _selectedTipo,
+                  decoration:
+                      const InputDecoration(labelText: 'Tipo de Transacción'),
+                  items: TipoTransaccion.values.map((type) {
+                    return DropdownMenuItem(
+                        value: type,
+                        child: Text(type.toString().split('.').last));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTipo = value!;
+                      _selectedCategoriaId =
+                          null; // Reset category when type changes
+                      _selectedCuentaDestinoId =
+                          null; // Reset destination account for non-transfers
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Category dropdown
+                StreamBuilder<List<Categoria>>(
+                  stream: categoriasStream,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const CircularProgressIndicator();
+                    }
+                    List<Categoria> filteredCategories = [];
+                    if (_selectedTipo == TipoTransaccion.ingreso) {
+                      filteredCategories = snapshot.data!
+                          .where((c) => c.tipo == TipoCategoria.ingreso)
+                          .toList();
+                    } else if (_selectedTipo == TipoTransaccion.gasto) {
+                      filteredCategories = snapshot.data!
+                          .where((c) => c.tipo == TipoCategoria.gasto)
+                          .toList();
+                    }
+                    return DropdownButtonFormField<int>(
+                      initialValue: _selectedCategoriaId,
+                      decoration: const InputDecoration(labelText: 'Categoría'),
+                      items: filteredCategories.map((cat) {
+                        return DropdownMenuItem(
+                            value: cat.id, child: Text(cat.nombre));
+                      }).toList(),
+                      onChanged: (value) =>
+                          setState(() => _selectedCategoriaId = value),
+                      validator: (value) {
+                        if (_selectedTipo != TipoTransaccion.transferencia &&
+                            value == null) {
+                          return 'Seleccione una categoría';
+                        }
+                        return null;
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Source Account dropdown
                 StreamBuilder<List<Cuenta>>(
                   stream: cuentasStream,
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const CircularProgressIndicator();
                     }
-                    final filteredCuentas = snapshot.data!
-                        .where((c) => c.id != _selectedCuentaOrigenId)
-                        .toList();
                     return DropdownButtonFormField<int>(
-                      initialValue: _selectedCuentaDestinoId,
+                      initialValue: _selectedCuentaOrigenId,
                       decoration:
-                          const InputDecoration(labelText: 'Cuenta de Destino'),
-                      items: filteredCuentas.map((cuenta) {
+                          const InputDecoration(labelText: 'Cuenta de Origen'),
+                      items: snapshot.data!.map((cuenta) {
                         return DropdownMenuItem(
                             value: cuenta.id, child: Text(cuenta.nombre));
                       }).toList(),
                       onChanged: (value) =>
-                          setState(() => _selectedCuentaDestinoId = value),
+                          setState(() => _selectedCuentaOrigenId = value),
                       validator: (value) => value == null
-                          ? 'Seleccione una cuenta de destino'
+                          ? 'Seleccione una cuenta de origen'
                           : null,
                     );
                   },
                 ),
-              const SizedBox(height: 16),
-              // Frequency dropdown
-              DropdownButtonFormField<Frecuencia>(
-                initialValue: _selectedFrecuencia,
-                decoration: const InputDecoration(labelText: 'Frecuencia'),
-                items: Frecuencia.values.map((freq) {
-                  return DropdownMenuItem(
-                      value: freq,
-                      child: Text(freq.toString().split('.').last));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedFrecuencia = value!;
-                    _calculateNextExecutionDate();
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              // Start Date
-              ListTile(
-                title: Text(
-                    'Fecha de Inicio: ${DateFormat('dd/MM/yyyy').format(_fechaInicio)}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => _presentDatePicker((date) {
-                  setState(() {
-                    _fechaInicio = date;
-                    _calculateNextExecutionDate();
-                  });
-                }),
-              ),
-              const SizedBox(height: 16),
-              // Next Execution Date
-              ListTile(
-                title: Text(
-                    'Próxima Ejecución: ${DateFormat('dd/MM/yyyy').format(_proximaEjecucion)}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => _presentDatePicker((date) {
-                  setState(() {
-                    _proximaEjecucion = date;
-                  });
-                }),
-              ),
-              const SizedBox(height: 16),
-              // End Date (Optional)
-              ListTile(
-                title: Text(
-                    'Fecha Fin (Opcional): ${_fechaFin == null ? 'Nunca' : DateFormat('dd/MM/yyyy').format(_fechaFin!)}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => _presentDatePicker((date) {
-                  setState(() {
-                    _fechaFin = date;
-                  });
-                }),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: const Text('Guardar Transacción Programada'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                // Destination Account dropdown (only for transfers)
+                if (_selectedTipo == TipoTransaccion.transferencia)
+                  StreamBuilder<List<Cuenta>>(
+                    stream: cuentasStream,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const CircularProgressIndicator();
+                      }
+                      final filteredCuentas = snapshot.data!
+                          .where((c) => c.id != _selectedCuentaOrigenId)
+                          .toList();
+                      return DropdownButtonFormField<int>(
+                        initialValue: _selectedCuentaDestinoId,
+                        decoration:
+                            const InputDecoration(labelText: 'Cuenta de Destino'),
+                        items: filteredCuentas.map((cuenta) {
+                          return DropdownMenuItem(
+                              value: cuenta.id, child: Text(cuenta.nombre));
+                        }).toList(),
+                        onChanged: (value) =>
+                            setState(() => _selectedCuentaDestinoId = value),
+                        validator: (value) => value == null
+                            ? 'Seleccione una cuenta de destino'
+                            : null,
+                      );
+                    },
+                  ),
+                const SizedBox(height: 16),
+                // Frequency dropdown
+                DropdownButtonFormField<Frecuencia>(
+                  initialValue: _selectedFrecuencia,
+                  decoration: const InputDecoration(labelText: 'Frecuencia'),
+                  items: Frecuencia.values.map((freq) {
+                    return DropdownMenuItem(
+                        value: freq,
+                        child: Text(freq.toString().split('.').last));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedFrecuencia = value!;
+                      _calculateNextExecutionDate();
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Start Date
+                ListTile(
+                  title: Text(
+                      'Fecha de Inicio: ${DateFormat('dd/MM/yyyy').format(_fechaInicio)}'),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => _presentDatePicker((date) {
+                    setState(() {
+                      _fechaInicio = date;
+                      _calculateNextExecutionDate();
+                    });
+                  }),
+                ),
+                const SizedBox(height: 16),
+                // Next Execution Date
+                ListTile(
+                  title: Text(
+                      'Próxima Ejecución: ${DateFormat('dd/MM/yyyy').format(_proximaEjecucion)}'),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => _presentDatePicker((date) {
+                    setState(() {
+                      _proximaEjecucion = date;
+                    });
+                  }),
+                ),
+                const SizedBox(height: 16),
+                // End Date (Optional)
+                ListTile(
+                  title: Text(
+                      'Fecha Fin (Opcional): ${_fechaFin == null ? 'Nunca' : DateFormat('dd/MM/yyyy').format(_fechaFin!)}'),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => _presentDatePicker((date) {
+                    setState(() {
+                      _fechaFin = date;
+                    });
+                  }),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _submitForm,
+                  child: const Text('Guardar Transacción Programada'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

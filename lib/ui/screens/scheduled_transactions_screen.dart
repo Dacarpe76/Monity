@@ -18,39 +18,41 @@ class ScheduledTransactionsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Transacciones Programadas'),
       ),
-      body: StreamBuilder<List<TransaccionProgramada>>(
-        stream: scheduledTransactionsStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-                child: Text('No hay transacciones programadas.'));
-          }
+      body: SafeArea(
+        child: StreamBuilder<List<TransaccionProgramada>>(
+          stream: scheduledTransactionsStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(
+                  child: Text('No hay transacciones programadas.'));
+            }
 
-          final transactions = snapshot.data!;
-          return ListView.builder(
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              final transaction = transactions[index];
-              return ListTile(
-                title: Text(transaction.descripcion),
-                subtitle: Text(
-                    '${transaction.cantidad.toStringAsFixed(2)}€ - ${transaction.frecuencia.toString().split('.').last} - Próxima: ${DateFormat.yMd().format(transaction.proximaEjecucion)}'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _showDeleteConfirmationDialog(
-                      context, ref, transaction.id),
-                ),
-                onTap: () {},
-              );
-            },
-          );
-        },
+            final transactions = snapshot.data!;
+            return ListView.builder(
+              itemCount: transactions.length,
+              itemBuilder: (context, index) {
+                final transaction = transactions[index];
+                return ListTile(
+                  title: Text(transaction.descripcion),
+                  subtitle: Text(
+                      '${transaction.cantidad.toStringAsFixed(2)}€ - ${transaction.frecuencia.toString().split('.').last} - Próxima: ${DateFormat.yMd().format(transaction.proximaEjecucion)}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _showDeleteConfirmationDialog(
+                        context, ref, transaction.id),
+                  ),
+                  onTap: () {},
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

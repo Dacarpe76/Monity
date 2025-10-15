@@ -117,6 +117,8 @@ class TransaccionesProgramadas extends Table {
   DateTimeColumn get fechaFin => dateTime().nullable()();
   BoolColumn get isTransferencia =>
       boolean().withDefault(const Constant(false))();
+  IntColumn get diaDelMes => integer().nullable()();
+  IntColumn get diaDeLaSemana => integer().nullable()();
 }
 
 class DetailedTransaction {
@@ -141,6 +143,7 @@ class CategoriaWithUsage {
 @DataClassName('AppSetting')
 class AppSettings extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
+  TextColumn get currency => text().withDefault(const Constant('EUR'))();
   BoolColumn get showBudgetLimit =>
       boolean().withDefault(const Constant(true))();
   BoolColumn get showMaxBalance =>
@@ -179,7 +182,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(connect());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -267,6 +270,13 @@ class AppDatabase extends _$AppDatabase {
               variables: [Variable.withBool(true)],
               updates: {appSettings},
             );
+          }
+          if (from < 15) {
+            await m.addColumn(transaccionesProgramadas, transaccionesProgramadas.diaDelMes);
+            await m.addColumn(transaccionesProgramadas, transaccionesProgramadas.diaDeLaSemana);
+          }
+          if (from < 16) {
+            await m.addColumn(appSettings, appSettings.currency);
           }
         },
       );

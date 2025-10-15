@@ -41,59 +41,61 @@ class ManageCreditsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Gestionar Créditos'),
       ),
-      body: StreamBuilder<List<Credito>>(
-        stream: db.creditosDao.watchAllCreditos(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        child: StreamBuilder<List<Credito>>(
+          stream: db.creditosDao.watchAllCreditos(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
 
-          final creditos = snapshot.data ?? [];
+            final creditos = snapshot.data ?? [];
 
-          if (creditos.isEmpty) {
-            return const Center(
-              child: Text('No tienes créditos añadidos.'),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: creditos.length,
-            itemBuilder: (context, index) {
-              final credito = creditos[index];
-              return ListTile(
-                title: Text(credito.name),
-                subtitle: Text(
-                    'Plazo: ${credito.plazoEnMeses} meses - Pendiente: ${credito.remainingAmount.toStringAsFixed(2)} €'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      tooltip: 'Eliminar',
-                      onPressed: () => deleteCredit(credito.id),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      tooltip: 'Editar',
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                AddCreditScreen(credit: credito),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+            if (creditos.isEmpty) {
+              return const Center(
+                child: Text('No tienes créditos añadidos.'),
               );
-            },
-          );
-        },
+            }
+
+            return ListView.builder(
+              itemCount: creditos.length,
+              itemBuilder: (context, index) {
+                final credito = creditos[index];
+                return ListTile(
+                  title: Text(credito.name),
+                  subtitle: Text(
+                      'Plazo: ${credito.plazoEnMeses} meses - Pendiente: ${credito.remainingAmount.toStringAsFixed(2)} €'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        tooltip: 'Eliminar',
+                        onPressed: () => deleteCredit(credito.id),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        tooltip: 'Editar',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  AddCreditScreen(credit: credito),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
