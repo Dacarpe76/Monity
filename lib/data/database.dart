@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'dart:math';
 
 import 'package:monity/data/default_categories.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -157,6 +158,13 @@ class AppSettings extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('Quote')
+class Quotes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get quoteText => text()();
+  BoolColumn get isUsed => boolean().withDefault(const Constant(false))();
+}
+
 // --- DATABASE CLASS ---
 
 @DriftDatabase(tables: [
@@ -168,6 +176,7 @@ class AppSettings extends Table {
   TransaccionesProgramadas,
   Creditos,
   AppSettings,
+  Quotes,
 ], daos: [
   CuentasDao,
   CategoriasDao,
@@ -177,12 +186,13 @@ class AppSettings extends Table {
   TransaccionesProgramadasDao,
   CreditosDao,
   AppSettingsDao,
+  QuotesDao,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(connect());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -277,6 +287,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 16) {
             await m.addColumn(appSettings, appSettings.currency);
+          }
+          if (from < 17) {
+            await m.createTable(quotes);
           }
         },
       );
@@ -718,5 +731,32 @@ class AppSettingsDao extends DatabaseAccessor<AppDatabase>
   Future<int> updateSettings(AppSettingsCompanion settings) {
     return (update(appSettings)..where((tbl) => tbl.id.equals(1)))
         .write(settings);
+  }
+}
+
+@DriftAccessor(tables: [Quotes])
+class QuotesDao extends DatabaseAccessor<AppDatabase> with _$QuotesDaoMixin {
+  QuotesDao(super.db);
+
+  Future<Quote?> getUnusedQuote() async {
+    final unusedQuotes = await (select(quotes)..where((q) => q.isUsed.equals(false))).get();
+    if (unusedQuotes.isEmpty) {
+      await (update(quotes)..where((q) => q.isUsed.equals(true))).write(const QuotesCompanion(isUsed: Value(false)));
+      final allQuotes = await select(quotes).get();
+      if (allQuotes.isEmpty) return null;
+      final randomQuote = allQuotes[Random().nextInt(allQuotes.length)];
+      await (update(quotes)..where((q) => q.id.equals(randomQuote.id))).write(const QuotesCompanion(isUsed: Value(true)));
+      return randomQuote;
+    } else {
+      final randomQuote = unusedQuotes[Random().nextInt(unusedQuotes.length)];
+      await (update(quotes)..where((q) => q.id.equals(randomQuote.id))).write(const QuotesCompanion(isUsed: Value(true)));
+      return randomQuote;
+    }
+  }
+
+  Future<void> addQuotes(List<QuotesCompanion> newQuotes) async {
+    await batch((batch) {
+      batch.insertAll(quotes, newQuotes);
+    });
   }
 }

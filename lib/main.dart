@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:monity/logic/notification_service.dart';
+import 'package:monity/logic/work_manager_service.dart';
 import 'package:monity/providers.dart';
 import 'package:monity/ui/screens/home_screen.dart';
 import 'package:logger/logger.dart';
@@ -13,6 +15,11 @@ void main() async {
   // Asegura la inicialización de los bindings de Flutter
   WidgetsFlutterBinding.ensureInitialized();
   logger.d('WidgetsFlutterBinding initialized');
+
+  await WorkManagerService().init();
+  await WorkManagerService().registerDailyQuoteTask();
+  await WorkManagerService().registerMonthlySavingsTask();
+  await NotificationService().init();
 
   final prefs = await SharedPreferences.getInstance();
   final isSetupComplete = prefs.getBool('setup_complete') ?? false;

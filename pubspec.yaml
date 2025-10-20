@@ -38,6 +38,10 @@ dependencies:
   flutter_riverpod: ^2.6.1
   intl: 0.20.2
 
+  # Firebase
+  firebase_core: ^3.2.0
+  firebase_messaging: ^15.0.1
+
   # Database (Drift)
   drift: ^2.28.1
   sqlite3: ^2.4.5
@@ -55,6 +59,9 @@ dependencies:
   logger: ^2.6.0
   file_picker: ^10.3.3
   marquee: ^2.3.0
+  flutter_local_notifications: ^17.2.1
+  workmanager: ^0.5.2
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
@@ -65,6 +72,7 @@ dev_dependencies:
   build_runner: ^2.4.14
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.4
+  msix: ^3.16.12
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -84,6 +92,7 @@ flutter:
     - assets/icons/icon2/
     - assets/icons/Fuente2.png
     - assets/icons/icon3/icono/
+    - assets/frases.txt
 
   fonts:
     - family: IndieFlower

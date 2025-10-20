@@ -3584,6 +3584,221 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   }
 }
 
+class $QuotesTable extends Quotes with TableInfo<$QuotesTable, Quote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QuotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _quoteTextMeta =
+      const VerificationMeta('quoteText');
+  @override
+  late final GeneratedColumn<String> quoteText = GeneratedColumn<String>(
+      'quote_text', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isUsedMeta = const VerificationMeta('isUsed');
+  @override
+  late final GeneratedColumn<bool> isUsed = GeneratedColumn<bool>(
+      'is_used', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_used" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [id, quoteText, isUsed];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'quotes';
+  @override
+  VerificationContext validateIntegrity(Insertable<Quote> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('quote_text')) {
+      context.handle(_quoteTextMeta,
+          quoteText.isAcceptableOrUnknown(data['quote_text']!, _quoteTextMeta));
+    } else if (isInserting) {
+      context.missing(_quoteTextMeta);
+    }
+    if (data.containsKey('is_used')) {
+      context.handle(_isUsedMeta,
+          isUsed.isAcceptableOrUnknown(data['is_used']!, _isUsedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Quote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Quote(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      quoteText: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}quote_text'])!,
+      isUsed: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_used'])!,
+    );
+  }
+
+  @override
+  $QuotesTable createAlias(String alias) {
+    return $QuotesTable(attachedDatabase, alias);
+  }
+}
+
+class Quote extends DataClass implements Insertable<Quote> {
+  final int id;
+  final String quoteText;
+  final bool isUsed;
+  const Quote(
+      {required this.id, required this.quoteText, required this.isUsed});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['quote_text'] = Variable<String>(quoteText);
+    map['is_used'] = Variable<bool>(isUsed);
+    return map;
+  }
+
+  QuotesCompanion toCompanion(bool nullToAbsent) {
+    return QuotesCompanion(
+      id: Value(id),
+      quoteText: Value(quoteText),
+      isUsed: Value(isUsed),
+    );
+  }
+
+  factory Quote.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Quote(
+      id: serializer.fromJson<int>(json['id']),
+      quoteText: serializer.fromJson<String>(json['quoteText']),
+      isUsed: serializer.fromJson<bool>(json['isUsed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'quoteText': serializer.toJson<String>(quoteText),
+      'isUsed': serializer.toJson<bool>(isUsed),
+    };
+  }
+
+  Quote copyWith({int? id, String? quoteText, bool? isUsed}) => Quote(
+        id: id ?? this.id,
+        quoteText: quoteText ?? this.quoteText,
+        isUsed: isUsed ?? this.isUsed,
+      );
+  Quote copyWithCompanion(QuotesCompanion data) {
+    return Quote(
+      id: data.id.present ? data.id.value : this.id,
+      quoteText: data.quoteText.present ? data.quoteText.value : this.quoteText,
+      isUsed: data.isUsed.present ? data.isUsed.value : this.isUsed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Quote(')
+          ..write('id: $id, ')
+          ..write('quoteText: $quoteText, ')
+          ..write('isUsed: $isUsed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, quoteText, isUsed);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Quote &&
+          other.id == this.id &&
+          other.quoteText == this.quoteText &&
+          other.isUsed == this.isUsed);
+}
+
+class QuotesCompanion extends UpdateCompanion<Quote> {
+  final Value<int> id;
+  final Value<String> quoteText;
+  final Value<bool> isUsed;
+  const QuotesCompanion({
+    this.id = const Value.absent(),
+    this.quoteText = const Value.absent(),
+    this.isUsed = const Value.absent(),
+  });
+  QuotesCompanion.insert({
+    this.id = const Value.absent(),
+    required String quoteText,
+    this.isUsed = const Value.absent(),
+  }) : quoteText = Value(quoteText);
+  static Insertable<Quote> custom({
+    Expression<int>? id,
+    Expression<String>? quoteText,
+    Expression<bool>? isUsed,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (quoteText != null) 'quote_text': quoteText,
+      if (isUsed != null) 'is_used': isUsed,
+    });
+  }
+
+  QuotesCompanion copyWith(
+      {Value<int>? id, Value<String>? quoteText, Value<bool>? isUsed}) {
+    return QuotesCompanion(
+      id: id ?? this.id,
+      quoteText: quoteText ?? this.quoteText,
+      isUsed: isUsed ?? this.isUsed,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (quoteText.present) {
+      map['quote_text'] = Variable<String>(quoteText.value);
+    }
+    if (isUsed.present) {
+      map['is_used'] = Variable<bool>(isUsed.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuotesCompanion(')
+          ..write('id: $id, ')
+          ..write('quoteText: $quoteText, ')
+          ..write('isUsed: $isUsed')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3596,6 +3811,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TransaccionesProgramadasTable(this);
   late final $CreditosTable creditos = $CreditosTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
+  late final $QuotesTable quotes = $QuotesTable(this);
   late final CuentasDao cuentasDao = CuentasDao(this as AppDatabase);
   late final CategoriasDao categoriasDao = CategoriasDao(this as AppDatabase);
   late final IngresosDao ingresosDao = IngresosDao(this as AppDatabase);
@@ -3607,6 +3823,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final CreditosDao creditosDao = CreditosDao(this as AppDatabase);
   late final AppSettingsDao appSettingsDao =
       AppSettingsDao(this as AppDatabase);
+  late final QuotesDao quotesDao = QuotesDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3619,7 +3836,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         transacciones,
         transaccionesProgramadas,
         creditos,
-        appSettings
+        appSettings,
+        quotes
       ];
 }
 
@@ -6891,6 +7109,135 @@ typedef $$AppSettingsTableProcessedTableManager = ProcessedTableManager<
     (AppSetting, BaseReferences<_$AppDatabase, $AppSettingsTable, AppSetting>),
     AppSetting,
     PrefetchHooks Function()>;
+typedef $$QuotesTableCreateCompanionBuilder = QuotesCompanion Function({
+  Value<int> id,
+  required String quoteText,
+  Value<bool> isUsed,
+});
+typedef $$QuotesTableUpdateCompanionBuilder = QuotesCompanion Function({
+  Value<int> id,
+  Value<String> quoteText,
+  Value<bool> isUsed,
+});
+
+class $$QuotesTableFilterComposer
+    extends Composer<_$AppDatabase, $QuotesTable> {
+  $$QuotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get quoteText => $composableBuilder(
+      column: $table.quoteText, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isUsed => $composableBuilder(
+      column: $table.isUsed, builder: (column) => ColumnFilters(column));
+}
+
+class $$QuotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $QuotesTable> {
+  $$QuotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get quoteText => $composableBuilder(
+      column: $table.quoteText, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isUsed => $composableBuilder(
+      column: $table.isUsed, builder: (column) => ColumnOrderings(column));
+}
+
+class $$QuotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $QuotesTable> {
+  $$QuotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get quoteText =>
+      $composableBuilder(column: $table.quoteText, builder: (column) => column);
+
+  GeneratedColumn<bool> get isUsed =>
+      $composableBuilder(column: $table.isUsed, builder: (column) => column);
+}
+
+class $$QuotesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $QuotesTable,
+    Quote,
+    $$QuotesTableFilterComposer,
+    $$QuotesTableOrderingComposer,
+    $$QuotesTableAnnotationComposer,
+    $$QuotesTableCreateCompanionBuilder,
+    $$QuotesTableUpdateCompanionBuilder,
+    (Quote, BaseReferences<_$AppDatabase, $QuotesTable, Quote>),
+    Quote,
+    PrefetchHooks Function()> {
+  $$QuotesTableTableManager(_$AppDatabase db, $QuotesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$QuotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$QuotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$QuotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> quoteText = const Value.absent(),
+            Value<bool> isUsed = const Value.absent(),
+          }) =>
+              QuotesCompanion(
+            id: id,
+            quoteText: quoteText,
+            isUsed: isUsed,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String quoteText,
+            Value<bool> isUsed = const Value.absent(),
+          }) =>
+              QuotesCompanion.insert(
+            id: id,
+            quoteText: quoteText,
+            isUsed: isUsed,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$QuotesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $QuotesTable,
+    Quote,
+    $$QuotesTableFilterComposer,
+    $$QuotesTableOrderingComposer,
+    $$QuotesTableAnnotationComposer,
+    $$QuotesTableCreateCompanionBuilder,
+    $$QuotesTableUpdateCompanionBuilder,
+    (Quote, BaseReferences<_$AppDatabase, $QuotesTable, Quote>),
+    Quote,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6912,6 +7259,8 @@ class $AppDatabaseManager {
       $$CreditosTableTableManager(_db, _db.creditos);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
+  $$QuotesTableTableManager get quotes =>
+      $$QuotesTableTableManager(_db, _db.quotes);
 }
 
 mixin _$CuentasDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -6947,4 +7296,7 @@ mixin _$CreditosDaoMixin on DatabaseAccessor<AppDatabase> {
 }
 mixin _$AppSettingsDaoMixin on DatabaseAccessor<AppDatabase> {
   $AppSettingsTable get appSettings => attachedDatabase.appSettings;
+}
+mixin _$QuotesDaoMixin on DatabaseAccessor<AppDatabase> {
+  $QuotesTable get quotes => attachedDatabase.quotes;
 }

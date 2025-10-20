@@ -139,26 +139,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildGeneralSettingsSection(WidgetRef ref, BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
+    final motivationalQuotesEnabled = ref.watch(motivationalQuotesProvider);
+
     return settings.when(
       data: (appSettings) {
-        return ListTile(
-          title: const Text('Moneda'),
-          trailing: DropdownButton<String>(
-            value: appSettings.currency,
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                ref.read(appSettingsDaoProvider).updateSettings(
-                      AppSettingsCompanion(currency: drift.Value(newValue)),
-                    );
-              }
-            },
-            items: supportedCurrencies.map<DropdownMenuItem<String>>((Currency currency) {
-              return DropdownMenuItem<String>(
-                value: currency.code,
-                child: Text('${currency.name} (${currency.symbol})'),
-              );
-            }).toList(),
-          ),
+        return Column(
+          children: [
+            ListTile(
+              title: const Text('Moneda'),
+              trailing: DropdownButton<String>(
+                value: appSettings.currency,
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    ref.read(appSettingsDaoProvider).updateSettings(
+                          AppSettingsCompanion(currency: drift.Value(newValue)),
+                        );
+                  }
+                },
+                items: supportedCurrencies.map<DropdownMenuItem<String>>((Currency currency) {
+                  return DropdownMenuItem<String>(
+                    value: currency.code,
+                    child: Text('${currency.name} (${currency.symbol})'),
+                  );
+                }).toList(),
+              ),
+            ),
+            SwitchListTile(
+              title: const Text('Frase motivadora diaria'),
+              value: motivationalQuotesEnabled,
+              onChanged: (value) {
+                ref.read(motivationalQuotesProvider.notifier).toggle(value);
+              },
+            ),
+          ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -627,7 +640,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final colorString = '#${selectedColor.value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+              final colorString = '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
               final updatedCategory = category.copyWith(
                 nombre: nombreController.text,
                 tipo: tipo,

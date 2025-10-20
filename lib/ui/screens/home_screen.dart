@@ -5,10 +5,12 @@ import 'package:monity/providers.dart';
 import 'package:monity/ui/screens/add_expense_screen.dart';
 import 'package:monity/ui/screens/add_income_screen.dart';
 import 'package:monity/ui/screens/add_transfer_screen.dart';
+import 'package:monity/ui/screens/add_credit_screen.dart';
 import 'package:monity/ui/screens/settings_screen.dart';
 import 'package:monity/ui/screens/manual_screen.dart'; // Import the new manual screen
 import 'package:monity/ui/screens/setup_screen.dart';
 import 'package:monity/ui/widgets/account_card.dart';
+import 'package:monity/ui/screens/budgets_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -62,6 +64,26 @@ class HomeScreen extends ConsumerWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (context) => const AddTransferScreen()),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.credit_card),
+                    tooltip: 'Añadir/Gestionar Créditos',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => const AddCreditScreen()),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.pie_chart),
+                    tooltip: 'Presupuestos',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => const BudgetsScreen()),
                       );
                     },
                   ),

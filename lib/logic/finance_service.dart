@@ -731,6 +731,33 @@ class FinanceService {
     return const ListToCsvConverter().convert(rows);
   }
 
+  Future<double> calculatePreviousMonthSavings() async {
+    final now = DateTime.now();
+    final firstDayOfCurrentMonth = DateTime(now.year, now.month, 1);
+    final lastDayOfPreviousMonth =
+        firstDayOfCurrentMonth.subtract(const Duration(days: 1));
+    final firstDayOfPreviousMonth = DateTime(
+        lastDayOfPreviousMonth.year, lastDayOfPreviousMonth.month, 1);
+
+    final transactions = await (_db.transaccionesDao.select(_db.transacciones)
+          ..where((tbl) => tbl.fecha.isBetween(
+              Variable(firstDayOfPreviousMonth), Variable(lastDayOfPreviousMonth))))
+        .get();
+
+    double totalIncome = 0;
+    double totalExpenses = 0;
+
+    for (final tx in transactions) {
+      if (tx.tipo == TipoTransaccion.ingreso) {
+        totalIncome += tx.cantidad;
+      } else if (tx.tipo == TipoTransaccion.gasto) {
+        totalExpenses += tx.cantidad.abs();
+      }
+    }
+
+    return totalIncome - totalExpenses;
+  }
+
   Future<bool> agregarTransferencia(
       double cantidad,
       int idCuentaOrigen,
@@ -810,4 +837,6 @@ class FinanceService {
 
     return gastoSuccess;
   }
+
+  
 }

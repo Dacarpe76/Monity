@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:monity/data/currencies.dart';
 import 'package:monity/data/database.dart';
 import 'package:monity/logic/finance_service.dart';
+import 'package:monity/logic/work_manager_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Providers para los DAOs
 final cuentasDaoProvider = Provider<CuentasDao>((ref) {
@@ -48,6 +50,11 @@ final financeServiceProvider = Provider<FinanceService>((ref) {
   return FinanceService(db);
 });
 
+final cuentasProvider = StreamProvider<List<Cuenta>>((ref) {
+  final dao = ref.watch(cuentasDaoProvider);
+  return dao.watchAllCuentas();
+});
+
 final unsortedCategoriesProvider = StreamProvider<List<Categoria>>((ref) {
   final dao = ref.watch(categoriasDaoProvider);
   return dao.watchAllCategorias();
@@ -79,3 +86,30 @@ final currencyProvider = Provider<Currency>((ref) {
 });
 
 final showAmountsProvider = StateProvider<bool>((ref) => true);
+
+final motivationalQuotesProvider = StateNotifierProvider<MotivationalQuotesNotifier, bool>((ref) {
+  return MotivationalQuotesNotifier();
+});
+
+class MotivationalQuotesNotifier extends StateNotifier<bool> {
+  MotivationalQuotesNotifier() : super(false) {
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool('motivational_quotes_enabled') ?? false;
+  }
+
+  Future<void> toggle(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('motivational_quotes_enabled', value);
+    state = value;
+
+    if (state) {
+      WorkManagerService().registerDailyQuoteTask();
+    } else {
+      WorkManagerService().cancelAllTasks();
+    }
+  }
+}
