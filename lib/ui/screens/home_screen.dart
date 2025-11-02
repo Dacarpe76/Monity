@@ -10,7 +10,10 @@ import 'package:monity/ui/screens/settings_screen.dart';
 import 'package:monity/ui/screens/manual_screen.dart'; // Import the new manual screen
 import 'package:monity/ui/screens/setup_screen.dart';
 import 'package:monity/ui/widgets/account_card.dart';
-import 'package:monity/ui/screens/budgets_screen.dart';
+import 'package:monity/ui/screens/daily_balance_chart_screen.dart';
+
+
+
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -77,16 +80,8 @@ class HomeScreen extends ConsumerWidget {
                       );
                     },
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.pie_chart),
-                    tooltip: 'Presupuestos',
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (context) => const BudgetsScreen()),
-                      );
-                    },
-                  ),
+
+
                   IconButton(
                     icon: Icon(
                         showAmounts ? Icons.visibility : Icons.visibility_off),
@@ -192,42 +187,51 @@ class HomeScreen extends ConsumerWidget {
                                 ];
                               }),
                               // Display accumulated balance
-                              Card(
-                                shape: RoundedRectangleBorder(
-                                  side: const BorderSide(color: Colors.black, width: 1),
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                margin: const EdgeInsets.all(8.0),
-                                color: accumulatedBalance >= 0
-                                    ? Colors.green.shade100
-                                    : Colors.red
-                                        .shade100, // Conditional background color
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment
-                                        .spaceBetween, // Align items to start and end
-                                    children: [
-                                      const Text(
-                                        'Total acumulado:',
-                                        style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        showAmounts
-                                            ? '${accumulatedBalance.toStringAsFixed(2)} €'
-                                            : '***',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: accumulatedBalance >= 0
-                                              ? Colors.green.shade800
-                                              : Colors.red
-                                                  .shade800, // Adjust text color for contrast
+                              InkWell(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const DailyBalanceChartScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Card(
+                                  shape: RoundedRectangleBorder(
+                                    side: const BorderSide(color: Colors.black, width: 1),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  margin: const EdgeInsets.all(8.0),
+                                  color: accumulatedBalance >= 0
+                                      ? Colors.green.shade100
+                                      : Colors.red
+                                          .shade100, // Conditional background color
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment
+                                          .spaceBetween, // Align items to start and end
+                                      children: [
+                                        const Text(
+                                          'Total acumulado:',
+                                          style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          showAmounts
+                                              ? '${accumulatedBalance.toStringAsFixed(2)} €'
+                                              : '***',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: accumulatedBalance >= 0
+                                                ? Colors.green.shade800
+                                                : Colors.red
+                                                    .shade800, // Adjust text color for contrast
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -260,7 +264,7 @@ class _CreditListTile extends StatefulWidget {
 }
 
 class _CreditListTileState extends State<_CreditListTile> {
-  bool _hidden = false;
+  bool _hidden = true;
 
   void _toggleHidden() {
     setState(() {

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:monity/data/database.dart';
 import 'package:monity/providers.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:monity/ui/screens/daily_balance_chart_screen.dart';
 
 class TransactionListScreen extends ConsumerStatefulWidget {
   final Cuenta cuenta;
@@ -16,7 +17,7 @@ class TransactionListScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
-  int _visualizationType = 0; // 0: List, 1: Categories, 2: Bars, 3: Circle
+  int _visualizationType = 0; // 0: List, 1: Categories, 2: Bars, 3: Circle, 4: Timeline
   int _timeRange = 0; // 0: Monthly, 1: Annual, 2: Total
 
   Color _safeParseColor(String colorString) {
@@ -51,17 +52,25 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                       _visualizationType == 1,
                       _visualizationType == 2,
                       _visualizationType == 3,
+                      _visualizationType == 4,
                     ],
                     onPressed: (index) {
-                      setState(() {
-                        _visualizationType = index;
-                      });
+                      if (index == 4) {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => DailyBalanceChartScreen(cuenta: widget.cuenta),
+                        ));
+                      } else {
+                        setState(() {
+                          _visualizationType = index;
+                        });
+                      }
                     },
                     children: const [
                       Icon(Icons.list),
                       Icon(Icons.category),
                       Icon(Icons.bar_chart),
                       Icon(Icons.pie_chart),
+                      Icon(Icons.timeline),
                     ],
                   ),
                   const SizedBox(height: 8),

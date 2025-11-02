@@ -74,6 +74,22 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(999));
+  static const VerificationMeta _adjustmentPercentageMeta =
+      const VerificationMeta('adjustmentPercentage');
+  @override
+  late final GeneratedColumn<double> adjustmentPercentage =
+      GeneratedColumn<double>('adjustment_percentage', aliasedName, false,
+          type: DriftSqlType.double,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(1.20));
+  static const VerificationMeta _maxBalancePercentageMeta =
+      const VerificationMeta('maxBalancePercentage');
+  @override
+  late final GeneratedColumn<double> maxBalancePercentage =
+      GeneratedColumn<double>('max_balance_percentage', aliasedName, false,
+          type: DriftSqlType.double,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(0.90));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -84,7 +100,9 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
         gastoAcumuladoMes,
         ingresoAcumuladoMes,
         sobranteMesAnterior,
-        orden
+        orden,
+        adjustmentPercentage,
+        maxBalancePercentage
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -151,6 +169,18 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
       context.handle(
           _ordenMeta, orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta));
     }
+    if (data.containsKey('adjustment_percentage')) {
+      context.handle(
+          _adjustmentPercentageMeta,
+          adjustmentPercentage.isAcceptableOrUnknown(
+              data['adjustment_percentage']!, _adjustmentPercentageMeta));
+    }
+    if (data.containsKey('max_balance_percentage')) {
+      context.handle(
+          _maxBalancePercentageMeta,
+          maxBalancePercentage.isAcceptableOrUnknown(
+              data['max_balance_percentage']!, _maxBalancePercentageMeta));
+    }
     return context;
   }
 
@@ -180,6 +210,12 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
           data['${effectivePrefix}sobrante_mes_anterior'])!,
       orden: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}orden'])!,
+      adjustmentPercentage: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}adjustment_percentage'])!,
+      maxBalancePercentage: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}max_balance_percentage'])!,
     );
   }
 
@@ -199,6 +235,8 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
   final double ingresoAcumuladoMes;
   final double sobranteMesAnterior;
   final int orden;
+  final double adjustmentPercentage;
+  final double maxBalancePercentage;
   const Cuenta(
       {required this.id,
       required this.nombre,
@@ -208,7 +246,9 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       required this.gastoAcumuladoMes,
       required this.ingresoAcumuladoMes,
       required this.sobranteMesAnterior,
-      required this.orden});
+      required this.orden,
+      required this.adjustmentPercentage,
+      required this.maxBalancePercentage});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -221,6 +261,8 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
     map['ingreso_acumulado_mes'] = Variable<double>(ingresoAcumuladoMes);
     map['sobrante_mes_anterior'] = Variable<double>(sobranteMesAnterior);
     map['orden'] = Variable<int>(orden);
+    map['adjustment_percentage'] = Variable<double>(adjustmentPercentage);
+    map['max_balance_percentage'] = Variable<double>(maxBalancePercentage);
     return map;
   }
 
@@ -235,6 +277,8 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       ingresoAcumuladoMes: Value(ingresoAcumuladoMes),
       sobranteMesAnterior: Value(sobranteMesAnterior),
       orden: Value(orden),
+      adjustmentPercentage: Value(adjustmentPercentage),
+      maxBalancePercentage: Value(maxBalancePercentage),
     );
   }
 
@@ -255,6 +299,10 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       sobranteMesAnterior:
           serializer.fromJson<double>(json['sobranteMesAnterior']),
       orden: serializer.fromJson<int>(json['orden']),
+      adjustmentPercentage:
+          serializer.fromJson<double>(json['adjustmentPercentage']),
+      maxBalancePercentage:
+          serializer.fromJson<double>(json['maxBalancePercentage']),
     );
   }
   @override
@@ -270,6 +318,8 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       'ingresoAcumuladoMes': serializer.toJson<double>(ingresoAcumuladoMes),
       'sobranteMesAnterior': serializer.toJson<double>(sobranteMesAnterior),
       'orden': serializer.toJson<int>(orden),
+      'adjustmentPercentage': serializer.toJson<double>(adjustmentPercentage),
+      'maxBalancePercentage': serializer.toJson<double>(maxBalancePercentage),
     };
   }
 
@@ -282,7 +332,9 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
           double? gastoAcumuladoMes,
           double? ingresoAcumuladoMes,
           double? sobranteMesAnterior,
-          int? orden}) =>
+          int? orden,
+          double? adjustmentPercentage,
+          double? maxBalancePercentage}) =>
       Cuenta(
         id: id ?? this.id,
         nombre: nombre ?? this.nombre,
@@ -293,6 +345,8 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
         ingresoAcumuladoMes: ingresoAcumuladoMes ?? this.ingresoAcumuladoMes,
         sobranteMesAnterior: sobranteMesAnterior ?? this.sobranteMesAnterior,
         orden: orden ?? this.orden,
+        adjustmentPercentage: adjustmentPercentage ?? this.adjustmentPercentage,
+        maxBalancePercentage: maxBalancePercentage ?? this.maxBalancePercentage,
       );
   Cuenta copyWithCompanion(CuentasCompanion data) {
     return Cuenta(
@@ -316,6 +370,12 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
           ? data.sobranteMesAnterior.value
           : this.sobranteMesAnterior,
       orden: data.orden.present ? data.orden.value : this.orden,
+      adjustmentPercentage: data.adjustmentPercentage.present
+          ? data.adjustmentPercentage.value
+          : this.adjustmentPercentage,
+      maxBalancePercentage: data.maxBalancePercentage.present
+          ? data.maxBalancePercentage.value
+          : this.maxBalancePercentage,
     );
   }
 
@@ -330,7 +390,9 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
           ..write('gastoAcumuladoMes: $gastoAcumuladoMes, ')
           ..write('ingresoAcumuladoMes: $ingresoAcumuladoMes, ')
           ..write('sobranteMesAnterior: $sobranteMesAnterior, ')
-          ..write('orden: $orden')
+          ..write('orden: $orden, ')
+          ..write('adjustmentPercentage: $adjustmentPercentage, ')
+          ..write('maxBalancePercentage: $maxBalancePercentage')
           ..write(')'))
         .toString();
   }
@@ -345,7 +407,9 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       gastoAcumuladoMes,
       ingresoAcumuladoMes,
       sobranteMesAnterior,
-      orden);
+      orden,
+      adjustmentPercentage,
+      maxBalancePercentage);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -358,7 +422,9 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
           other.gastoAcumuladoMes == this.gastoAcumuladoMes &&
           other.ingresoAcumuladoMes == this.ingresoAcumuladoMes &&
           other.sobranteMesAnterior == this.sobranteMesAnterior &&
-          other.orden == this.orden);
+          other.orden == this.orden &&
+          other.adjustmentPercentage == this.adjustmentPercentage &&
+          other.maxBalancePercentage == this.maxBalancePercentage);
 }
 
 class CuentasCompanion extends UpdateCompanion<Cuenta> {
@@ -371,6 +437,8 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
   final Value<double> ingresoAcumuladoMes;
   final Value<double> sobranteMesAnterior;
   final Value<int> orden;
+  final Value<double> adjustmentPercentage;
+  final Value<double> maxBalancePercentage;
   const CuentasCompanion({
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
@@ -381,6 +449,8 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     this.ingresoAcumuladoMes = const Value.absent(),
     this.sobranteMesAnterior = const Value.absent(),
     this.orden = const Value.absent(),
+    this.adjustmentPercentage = const Value.absent(),
+    this.maxBalancePercentage = const Value.absent(),
   });
   CuentasCompanion.insert({
     this.id = const Value.absent(),
@@ -392,6 +462,8 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     this.ingresoAcumuladoMes = const Value.absent(),
     this.sobranteMesAnterior = const Value.absent(),
     this.orden = const Value.absent(),
+    this.adjustmentPercentage = const Value.absent(),
+    this.maxBalancePercentage = const Value.absent(),
   })  : nombre = Value(nombre),
         saldoActual = Value(saldoActual),
         saldoMaximoMensual = Value(saldoMaximoMensual),
@@ -406,6 +478,8 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     Expression<double>? ingresoAcumuladoMes,
     Expression<double>? sobranteMesAnterior,
     Expression<int>? orden,
+    Expression<double>? adjustmentPercentage,
+    Expression<double>? maxBalancePercentage,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -421,6 +495,10 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
       if (sobranteMesAnterior != null)
         'sobrante_mes_anterior': sobranteMesAnterior,
       if (orden != null) 'orden': orden,
+      if (adjustmentPercentage != null)
+        'adjustment_percentage': adjustmentPercentage,
+      if (maxBalancePercentage != null)
+        'max_balance_percentage': maxBalancePercentage,
     });
   }
 
@@ -433,7 +511,9 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
       Value<double>? gastoAcumuladoMes,
       Value<double>? ingresoAcumuladoMes,
       Value<double>? sobranteMesAnterior,
-      Value<int>? orden}) {
+      Value<int>? orden,
+      Value<double>? adjustmentPercentage,
+      Value<double>? maxBalancePercentage}) {
     return CuentasCompanion(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
@@ -444,6 +524,8 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
       ingresoAcumuladoMes: ingresoAcumuladoMes ?? this.ingresoAcumuladoMes,
       sobranteMesAnterior: sobranteMesAnterior ?? this.sobranteMesAnterior,
       orden: orden ?? this.orden,
+      adjustmentPercentage: adjustmentPercentage ?? this.adjustmentPercentage,
+      maxBalancePercentage: maxBalancePercentage ?? this.maxBalancePercentage,
     );
   }
 
@@ -479,6 +561,14 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     if (orden.present) {
       map['orden'] = Variable<int>(orden.value);
     }
+    if (adjustmentPercentage.present) {
+      map['adjustment_percentage'] =
+          Variable<double>(adjustmentPercentage.value);
+    }
+    if (maxBalancePercentage.present) {
+      map['max_balance_percentage'] =
+          Variable<double>(maxBalancePercentage.value);
+    }
     return map;
   }
 
@@ -493,7 +583,9 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
           ..write('gastoAcumuladoMes: $gastoAcumuladoMes, ')
           ..write('ingresoAcumuladoMes: $ingresoAcumuladoMes, ')
           ..write('sobranteMesAnterior: $sobranteMesAnterior, ')
-          ..write('orden: $orden')
+          ..write('orden: $orden, ')
+          ..write('adjustmentPercentage: $adjustmentPercentage, ')
+          ..write('maxBalancePercentage: $maxBalancePercentage')
           ..write(')'))
         .toString();
   }
@@ -3282,6 +3374,22 @@ class $AppSettingsTable extends AppSettings
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("show_projection" IN (0, 1))'),
       defaultValue: const Constant(true));
+  static const VerificationMeta _lastResetDateMeta =
+      const VerificationMeta('lastResetDate');
+  @override
+  late final GeneratedColumn<DateTime> lastResetDate =
+      GeneratedColumn<DateTime>('last_reset_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _monityControlEnabledMeta =
+      const VerificationMeta('monityControlEnabled');
+  @override
+  late final GeneratedColumn<bool> monityControlEnabled = GeneratedColumn<bool>(
+      'monity_control_enabled', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("monity_control_enabled" IN (0, 1))'),
+      defaultValue: const Constant(true));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -3289,7 +3397,9 @@ class $AppSettingsTable extends AppSettings
         showBudgetLimit,
         showMaxBalance,
         showMonthlySpending,
-        showProjection
+        showProjection,
+        lastResetDate,
+        monityControlEnabled
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3332,6 +3442,18 @@ class $AppSettingsTable extends AppSettings
           showProjection.isAcceptableOrUnknown(
               data['show_projection']!, _showProjectionMeta));
     }
+    if (data.containsKey('last_reset_date')) {
+      context.handle(
+          _lastResetDateMeta,
+          lastResetDate.isAcceptableOrUnknown(
+              data['last_reset_date']!, _lastResetDateMeta));
+    }
+    if (data.containsKey('monity_control_enabled')) {
+      context.handle(
+          _monityControlEnabledMeta,
+          monityControlEnabled.isAcceptableOrUnknown(
+              data['monity_control_enabled']!, _monityControlEnabledMeta));
+    }
     return context;
   }
 
@@ -3353,6 +3475,10 @@ class $AppSettingsTable extends AppSettings
           DriftSqlType.bool, data['${effectivePrefix}show_monthly_spending'])!,
       showProjection: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}show_projection'])!,
+      lastResetDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_reset_date']),
+      monityControlEnabled: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}monity_control_enabled'])!,
     );
   }
 
@@ -3369,13 +3495,17 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   final bool showMaxBalance;
   final bool showMonthlySpending;
   final bool showProjection;
+  final DateTime? lastResetDate;
+  final bool monityControlEnabled;
   const AppSetting(
       {required this.id,
       required this.currency,
       required this.showBudgetLimit,
       required this.showMaxBalance,
       required this.showMonthlySpending,
-      required this.showProjection});
+      required this.showProjection,
+      this.lastResetDate,
+      required this.monityControlEnabled});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3385,6 +3515,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     map['show_max_balance'] = Variable<bool>(showMaxBalance);
     map['show_monthly_spending'] = Variable<bool>(showMonthlySpending);
     map['show_projection'] = Variable<bool>(showProjection);
+    if (!nullToAbsent || lastResetDate != null) {
+      map['last_reset_date'] = Variable<DateTime>(lastResetDate);
+    }
+    map['monity_control_enabled'] = Variable<bool>(monityControlEnabled);
     return map;
   }
 
@@ -3396,6 +3530,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       showMaxBalance: Value(showMaxBalance),
       showMonthlySpending: Value(showMonthlySpending),
       showProjection: Value(showProjection),
+      lastResetDate: lastResetDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastResetDate),
+      monityControlEnabled: Value(monityControlEnabled),
     );
   }
 
@@ -3410,6 +3548,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       showMonthlySpending:
           serializer.fromJson<bool>(json['showMonthlySpending']),
       showProjection: serializer.fromJson<bool>(json['showProjection']),
+      lastResetDate: serializer.fromJson<DateTime?>(json['lastResetDate']),
+      monityControlEnabled:
+          serializer.fromJson<bool>(json['monityControlEnabled']),
     );
   }
   @override
@@ -3422,6 +3563,8 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       'showMaxBalance': serializer.toJson<bool>(showMaxBalance),
       'showMonthlySpending': serializer.toJson<bool>(showMonthlySpending),
       'showProjection': serializer.toJson<bool>(showProjection),
+      'lastResetDate': serializer.toJson<DateTime?>(lastResetDate),
+      'monityControlEnabled': serializer.toJson<bool>(monityControlEnabled),
     };
   }
 
@@ -3431,7 +3574,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           bool? showBudgetLimit,
           bool? showMaxBalance,
           bool? showMonthlySpending,
-          bool? showProjection}) =>
+          bool? showProjection,
+          Value<DateTime?> lastResetDate = const Value.absent(),
+          bool? monityControlEnabled}) =>
       AppSetting(
         id: id ?? this.id,
         currency: currency ?? this.currency,
@@ -3439,6 +3584,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
         showMaxBalance: showMaxBalance ?? this.showMaxBalance,
         showMonthlySpending: showMonthlySpending ?? this.showMonthlySpending,
         showProjection: showProjection ?? this.showProjection,
+        lastResetDate:
+            lastResetDate.present ? lastResetDate.value : this.lastResetDate,
+        monityControlEnabled: monityControlEnabled ?? this.monityControlEnabled,
       );
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
@@ -3456,6 +3604,12 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       showProjection: data.showProjection.present
           ? data.showProjection.value
           : this.showProjection,
+      lastResetDate: data.lastResetDate.present
+          ? data.lastResetDate.value
+          : this.lastResetDate,
+      monityControlEnabled: data.monityControlEnabled.present
+          ? data.monityControlEnabled.value
+          : this.monityControlEnabled,
     );
   }
 
@@ -3467,14 +3621,16 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ..write('showBudgetLimit: $showBudgetLimit, ')
           ..write('showMaxBalance: $showMaxBalance, ')
           ..write('showMonthlySpending: $showMonthlySpending, ')
-          ..write('showProjection: $showProjection')
+          ..write('showProjection: $showProjection, ')
+          ..write('lastResetDate: $lastResetDate, ')
+          ..write('monityControlEnabled: $monityControlEnabled')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, currency, showBudgetLimit, showMaxBalance,
-      showMonthlySpending, showProjection);
+      showMonthlySpending, showProjection, lastResetDate, monityControlEnabled);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3484,7 +3640,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           other.showBudgetLimit == this.showBudgetLimit &&
           other.showMaxBalance == this.showMaxBalance &&
           other.showMonthlySpending == this.showMonthlySpending &&
-          other.showProjection == this.showProjection);
+          other.showProjection == this.showProjection &&
+          other.lastResetDate == this.lastResetDate &&
+          other.monityControlEnabled == this.monityControlEnabled);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
@@ -3494,6 +3652,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<bool> showMaxBalance;
   final Value<bool> showMonthlySpending;
   final Value<bool> showProjection;
+  final Value<DateTime?> lastResetDate;
+  final Value<bool> monityControlEnabled;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.currency = const Value.absent(),
@@ -3501,6 +3661,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.showMaxBalance = const Value.absent(),
     this.showMonthlySpending = const Value.absent(),
     this.showProjection = const Value.absent(),
+    this.lastResetDate = const Value.absent(),
+    this.monityControlEnabled = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -3509,6 +3671,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.showMaxBalance = const Value.absent(),
     this.showMonthlySpending = const Value.absent(),
     this.showProjection = const Value.absent(),
+    this.lastResetDate = const Value.absent(),
+    this.monityControlEnabled = const Value.absent(),
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
@@ -3517,6 +3681,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Expression<bool>? showMaxBalance,
     Expression<bool>? showMonthlySpending,
     Expression<bool>? showProjection,
+    Expression<DateTime>? lastResetDate,
+    Expression<bool>? monityControlEnabled,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3526,6 +3692,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       if (showMonthlySpending != null)
         'show_monthly_spending': showMonthlySpending,
       if (showProjection != null) 'show_projection': showProjection,
+      if (lastResetDate != null) 'last_reset_date': lastResetDate,
+      if (monityControlEnabled != null)
+        'monity_control_enabled': monityControlEnabled,
     });
   }
 
@@ -3535,7 +3704,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       Value<bool>? showBudgetLimit,
       Value<bool>? showMaxBalance,
       Value<bool>? showMonthlySpending,
-      Value<bool>? showProjection}) {
+      Value<bool>? showProjection,
+      Value<DateTime?>? lastResetDate,
+      Value<bool>? monityControlEnabled}) {
     return AppSettingsCompanion(
       id: id ?? this.id,
       currency: currency ?? this.currency,
@@ -3543,6 +3714,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       showMaxBalance: showMaxBalance ?? this.showMaxBalance,
       showMonthlySpending: showMonthlySpending ?? this.showMonthlySpending,
       showProjection: showProjection ?? this.showProjection,
+      lastResetDate: lastResetDate ?? this.lastResetDate,
+      monityControlEnabled: monityControlEnabled ?? this.monityControlEnabled,
     );
   }
 
@@ -3567,6 +3740,13 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     if (showProjection.present) {
       map['show_projection'] = Variable<bool>(showProjection.value);
     }
+    if (lastResetDate.present) {
+      map['last_reset_date'] = Variable<DateTime>(lastResetDate.value);
+    }
+    if (monityControlEnabled.present) {
+      map['monity_control_enabled'] =
+          Variable<bool>(monityControlEnabled.value);
+    }
     return map;
   }
 
@@ -3578,7 +3758,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           ..write('showBudgetLimit: $showBudgetLimit, ')
           ..write('showMaxBalance: $showMaxBalance, ')
           ..write('showMonthlySpending: $showMonthlySpending, ')
-          ..write('showProjection: $showProjection')
+          ..write('showProjection: $showProjection, ')
+          ..write('lastResetDate: $lastResetDate, ')
+          ..write('monityControlEnabled: $monityControlEnabled')
           ..write(')'))
         .toString();
   }
@@ -3799,6 +3981,221 @@ class QuotesCompanion extends UpdateCompanion<Quote> {
   }
 }
 
+class $HistorialSaldosTable extends HistorialSaldos
+    with TableInfo<$HistorialSaldosTable, HistorialSaldo> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HistorialSaldosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+      'fecha', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _saldoMeta = const VerificationMeta('saldo');
+  @override
+  late final GeneratedColumn<double> saldo = GeneratedColumn<double>(
+      'saldo', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [id, fecha, saldo];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'historial_saldos';
+  @override
+  VerificationContext validateIntegrity(Insertable<HistorialSaldo> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+          _fechaMeta, fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta));
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('saldo')) {
+      context.handle(
+          _saldoMeta, saldo.isAcceptableOrUnknown(data['saldo']!, _saldoMeta));
+    } else if (isInserting) {
+      context.missing(_saldoMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HistorialSaldo map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HistorialSaldo(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      fecha: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha'])!,
+      saldo: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}saldo'])!,
+    );
+  }
+
+  @override
+  $HistorialSaldosTable createAlias(String alias) {
+    return $HistorialSaldosTable(attachedDatabase, alias);
+  }
+}
+
+class HistorialSaldo extends DataClass implements Insertable<HistorialSaldo> {
+  final int id;
+  final DateTime fecha;
+  final double saldo;
+  const HistorialSaldo(
+      {required this.id, required this.fecha, required this.saldo});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['fecha'] = Variable<DateTime>(fecha);
+    map['saldo'] = Variable<double>(saldo);
+    return map;
+  }
+
+  HistorialSaldosCompanion toCompanion(bool nullToAbsent) {
+    return HistorialSaldosCompanion(
+      id: Value(id),
+      fecha: Value(fecha),
+      saldo: Value(saldo),
+    );
+  }
+
+  factory HistorialSaldo.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HistorialSaldo(
+      id: serializer.fromJson<int>(json['id']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      saldo: serializer.fromJson<double>(json['saldo']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'saldo': serializer.toJson<double>(saldo),
+    };
+  }
+
+  HistorialSaldo copyWith({int? id, DateTime? fecha, double? saldo}) =>
+      HistorialSaldo(
+        id: id ?? this.id,
+        fecha: fecha ?? this.fecha,
+        saldo: saldo ?? this.saldo,
+      );
+  HistorialSaldo copyWithCompanion(HistorialSaldosCompanion data) {
+    return HistorialSaldo(
+      id: data.id.present ? data.id.value : this.id,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      saldo: data.saldo.present ? data.saldo.value : this.saldo,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HistorialSaldo(')
+          ..write('id: $id, ')
+          ..write('fecha: $fecha, ')
+          ..write('saldo: $saldo')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, fecha, saldo);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HistorialSaldo &&
+          other.id == this.id &&
+          other.fecha == this.fecha &&
+          other.saldo == this.saldo);
+}
+
+class HistorialSaldosCompanion extends UpdateCompanion<HistorialSaldo> {
+  final Value<int> id;
+  final Value<DateTime> fecha;
+  final Value<double> saldo;
+  const HistorialSaldosCompanion({
+    this.id = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.saldo = const Value.absent(),
+  });
+  HistorialSaldosCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime fecha,
+    required double saldo,
+  })  : fecha = Value(fecha),
+        saldo = Value(saldo);
+  static Insertable<HistorialSaldo> custom({
+    Expression<int>? id,
+    Expression<DateTime>? fecha,
+    Expression<double>? saldo,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fecha != null) 'fecha': fecha,
+      if (saldo != null) 'saldo': saldo,
+    });
+  }
+
+  HistorialSaldosCompanion copyWith(
+      {Value<int>? id, Value<DateTime>? fecha, Value<double>? saldo}) {
+    return HistorialSaldosCompanion(
+      id: id ?? this.id,
+      fecha: fecha ?? this.fecha,
+      saldo: saldo ?? this.saldo,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (saldo.present) {
+      map['saldo'] = Variable<double>(saldo.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HistorialSaldosCompanion(')
+          ..write('id: $id, ')
+          ..write('fecha: $fecha, ')
+          ..write('saldo: $saldo')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3812,6 +4209,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CreditosTable creditos = $CreditosTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $QuotesTable quotes = $QuotesTable(this);
+  late final $HistorialSaldosTable historialSaldos =
+      $HistorialSaldosTable(this);
   late final CuentasDao cuentasDao = CuentasDao(this as AppDatabase);
   late final CategoriasDao categoriasDao = CategoriasDao(this as AppDatabase);
   late final IngresosDao ingresosDao = IngresosDao(this as AppDatabase);
@@ -3824,6 +4223,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final AppSettingsDao appSettingsDao =
       AppSettingsDao(this as AppDatabase);
   late final QuotesDao quotesDao = QuotesDao(this as AppDatabase);
+  late final HistorialSaldosDao historialSaldosDao =
+      HistorialSaldosDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3837,7 +4238,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         transaccionesProgramadas,
         creditos,
         appSettings,
-        quotes
+        quotes,
+        historialSaldos
       ];
 }
 
@@ -3851,6 +4253,8 @@ typedef $$CuentasTableCreateCompanionBuilder = CuentasCompanion Function({
   Value<double> ingresoAcumuladoMes,
   Value<double> sobranteMesAnterior,
   Value<int> orden,
+  Value<double> adjustmentPercentage,
+  Value<double> maxBalancePercentage,
 });
 typedef $$CuentasTableUpdateCompanionBuilder = CuentasCompanion Function({
   Value<int> id,
@@ -3862,6 +4266,8 @@ typedef $$CuentasTableUpdateCompanionBuilder = CuentasCompanion Function({
   Value<double> ingresoAcumuladoMes,
   Value<double> sobranteMesAnterior,
   Value<int> orden,
+  Value<double> adjustmentPercentage,
+  Value<double> maxBalancePercentage,
 });
 
 final class $$CuentasTableReferences
@@ -3978,6 +4384,14 @@ class $$CuentasTableFilterComposer
 
   ColumnFilters<int> get orden => $composableBuilder(
       column: $table.orden, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get adjustmentPercentage => $composableBuilder(
+      column: $table.adjustmentPercentage,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get maxBalancePercentage => $composableBuilder(
+      column: $table.maxBalancePercentage,
+      builder: (column) => ColumnFilters(column));
 
   Expression<bool> transaccionesRefs(
       Expression<bool> Function($$TransaccionesTableFilterComposer f) f) {
@@ -4108,6 +4522,14 @@ class $$CuentasTableOrderingComposer
 
   ColumnOrderings<int> get orden => $composableBuilder(
       column: $table.orden, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get adjustmentPercentage => $composableBuilder(
+      column: $table.adjustmentPercentage,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get maxBalancePercentage => $composableBuilder(
+      column: $table.maxBalancePercentage,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$CuentasTableAnnotationComposer
@@ -4145,6 +4567,12 @@ class $$CuentasTableAnnotationComposer
 
   GeneratedColumn<int> get orden =>
       $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<double> get adjustmentPercentage => $composableBuilder(
+      column: $table.adjustmentPercentage, builder: (column) => column);
+
+  GeneratedColumn<double> get maxBalancePercentage => $composableBuilder(
+      column: $table.maxBalancePercentage, builder: (column) => column);
 
   Expression<T> transaccionesRefs<T extends Object>(
       Expression<T> Function($$TransaccionesTableAnnotationComposer a) f) {
@@ -4273,6 +4701,8 @@ class $$CuentasTableTableManager extends RootTableManager<
             Value<double> ingresoAcumuladoMes = const Value.absent(),
             Value<double> sobranteMesAnterior = const Value.absent(),
             Value<int> orden = const Value.absent(),
+            Value<double> adjustmentPercentage = const Value.absent(),
+            Value<double> maxBalancePercentage = const Value.absent(),
           }) =>
               CuentasCompanion(
             id: id,
@@ -4284,6 +4714,8 @@ class $$CuentasTableTableManager extends RootTableManager<
             ingresoAcumuladoMes: ingresoAcumuladoMes,
             sobranteMesAnterior: sobranteMesAnterior,
             orden: orden,
+            adjustmentPercentage: adjustmentPercentage,
+            maxBalancePercentage: maxBalancePercentage,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -4295,6 +4727,8 @@ class $$CuentasTableTableManager extends RootTableManager<
             Value<double> ingresoAcumuladoMes = const Value.absent(),
             Value<double> sobranteMesAnterior = const Value.absent(),
             Value<int> orden = const Value.absent(),
+            Value<double> adjustmentPercentage = const Value.absent(),
+            Value<double> maxBalancePercentage = const Value.absent(),
           }) =>
               CuentasCompanion.insert(
             id: id,
@@ -4306,6 +4740,8 @@ class $$CuentasTableTableManager extends RootTableManager<
             ingresoAcumuladoMes: ingresoAcumuladoMes,
             sobranteMesAnterior: sobranteMesAnterior,
             orden: orden,
+            adjustmentPercentage: adjustmentPercentage,
+            maxBalancePercentage: maxBalancePercentage,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
@@ -6933,6 +7369,8 @@ typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
   Value<bool> showMaxBalance,
   Value<bool> showMonthlySpending,
   Value<bool> showProjection,
+  Value<DateTime?> lastResetDate,
+  Value<bool> monityControlEnabled,
 });
 typedef $$AppSettingsTableUpdateCompanionBuilder = AppSettingsCompanion
     Function({
@@ -6942,6 +7380,8 @@ typedef $$AppSettingsTableUpdateCompanionBuilder = AppSettingsCompanion
   Value<bool> showMaxBalance,
   Value<bool> showMonthlySpending,
   Value<bool> showProjection,
+  Value<DateTime?> lastResetDate,
+  Value<bool> monityControlEnabled,
 });
 
 class $$AppSettingsTableFilterComposer
@@ -6973,6 +7413,13 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<bool> get showProjection => $composableBuilder(
       column: $table.showProjection,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastResetDate => $composableBuilder(
+      column: $table.lastResetDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get monityControlEnabled => $composableBuilder(
+      column: $table.monityControlEnabled,
       builder: (column) => ColumnFilters(column));
 }
 
@@ -7006,6 +7453,14 @@ class $$AppSettingsTableOrderingComposer
   ColumnOrderings<bool> get showProjection => $composableBuilder(
       column: $table.showProjection,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastResetDate => $composableBuilder(
+      column: $table.lastResetDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get monityControlEnabled => $composableBuilder(
+      column: $table.monityControlEnabled,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -7034,6 +7489,12 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<bool> get showProjection => $composableBuilder(
       column: $table.showProjection, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastResetDate => $composableBuilder(
+      column: $table.lastResetDate, builder: (column) => column);
+
+  GeneratedColumn<bool> get monityControlEnabled => $composableBuilder(
+      column: $table.monityControlEnabled, builder: (column) => column);
 }
 
 class $$AppSettingsTableTableManager extends RootTableManager<
@@ -7065,6 +7526,8 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             Value<bool> showMaxBalance = const Value.absent(),
             Value<bool> showMonthlySpending = const Value.absent(),
             Value<bool> showProjection = const Value.absent(),
+            Value<DateTime?> lastResetDate = const Value.absent(),
+            Value<bool> monityControlEnabled = const Value.absent(),
           }) =>
               AppSettingsCompanion(
             id: id,
@@ -7073,6 +7536,8 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             showMaxBalance: showMaxBalance,
             showMonthlySpending: showMonthlySpending,
             showProjection: showProjection,
+            lastResetDate: lastResetDate,
+            monityControlEnabled: monityControlEnabled,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -7081,6 +7546,8 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             Value<bool> showMaxBalance = const Value.absent(),
             Value<bool> showMonthlySpending = const Value.absent(),
             Value<bool> showProjection = const Value.absent(),
+            Value<DateTime?> lastResetDate = const Value.absent(),
+            Value<bool> monityControlEnabled = const Value.absent(),
           }) =>
               AppSettingsCompanion.insert(
             id: id,
@@ -7089,6 +7556,8 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             showMaxBalance: showMaxBalance,
             showMonthlySpending: showMonthlySpending,
             showProjection: showProjection,
+            lastResetDate: lastResetDate,
+            monityControlEnabled: monityControlEnabled,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -7238,6 +7707,144 @@ typedef $$QuotesTableProcessedTableManager = ProcessedTableManager<
     (Quote, BaseReferences<_$AppDatabase, $QuotesTable, Quote>),
     Quote,
     PrefetchHooks Function()>;
+typedef $$HistorialSaldosTableCreateCompanionBuilder = HistorialSaldosCompanion
+    Function({
+  Value<int> id,
+  required DateTime fecha,
+  required double saldo,
+});
+typedef $$HistorialSaldosTableUpdateCompanionBuilder = HistorialSaldosCompanion
+    Function({
+  Value<int> id,
+  Value<DateTime> fecha,
+  Value<double> saldo,
+});
+
+class $$HistorialSaldosTableFilterComposer
+    extends Composer<_$AppDatabase, $HistorialSaldosTable> {
+  $$HistorialSaldosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get saldo => $composableBuilder(
+      column: $table.saldo, builder: (column) => ColumnFilters(column));
+}
+
+class $$HistorialSaldosTableOrderingComposer
+    extends Composer<_$AppDatabase, $HistorialSaldosTable> {
+  $$HistorialSaldosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get saldo => $composableBuilder(
+      column: $table.saldo, builder: (column) => ColumnOrderings(column));
+}
+
+class $$HistorialSaldosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HistorialSaldosTable> {
+  $$HistorialSaldosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<double> get saldo =>
+      $composableBuilder(column: $table.saldo, builder: (column) => column);
+}
+
+class $$HistorialSaldosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $HistorialSaldosTable,
+    HistorialSaldo,
+    $$HistorialSaldosTableFilterComposer,
+    $$HistorialSaldosTableOrderingComposer,
+    $$HistorialSaldosTableAnnotationComposer,
+    $$HistorialSaldosTableCreateCompanionBuilder,
+    $$HistorialSaldosTableUpdateCompanionBuilder,
+    (
+      HistorialSaldo,
+      BaseReferences<_$AppDatabase, $HistorialSaldosTable, HistorialSaldo>
+    ),
+    HistorialSaldo,
+    PrefetchHooks Function()> {
+  $$HistorialSaldosTableTableManager(
+      _$AppDatabase db, $HistorialSaldosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HistorialSaldosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HistorialSaldosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$HistorialSaldosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<DateTime> fecha = const Value.absent(),
+            Value<double> saldo = const Value.absent(),
+          }) =>
+              HistorialSaldosCompanion(
+            id: id,
+            fecha: fecha,
+            saldo: saldo,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required DateTime fecha,
+            required double saldo,
+          }) =>
+              HistorialSaldosCompanion.insert(
+            id: id,
+            fecha: fecha,
+            saldo: saldo,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$HistorialSaldosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $HistorialSaldosTable,
+    HistorialSaldo,
+    $$HistorialSaldosTableFilterComposer,
+    $$HistorialSaldosTableOrderingComposer,
+    $$HistorialSaldosTableAnnotationComposer,
+    $$HistorialSaldosTableCreateCompanionBuilder,
+    $$HistorialSaldosTableUpdateCompanionBuilder,
+    (
+      HistorialSaldo,
+      BaseReferences<_$AppDatabase, $HistorialSaldosTable, HistorialSaldo>
+    ),
+    HistorialSaldo,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7261,6 +7868,8 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$QuotesTableTableManager get quotes =>
       $$QuotesTableTableManager(_db, _db.quotes);
+  $$HistorialSaldosTableTableManager get historialSaldos =>
+      $$HistorialSaldosTableTableManager(_db, _db.historialSaldos);
 }
 
 mixin _$CuentasDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -7299,4 +7908,7 @@ mixin _$AppSettingsDaoMixin on DatabaseAccessor<AppDatabase> {
 }
 mixin _$QuotesDaoMixin on DatabaseAccessor<AppDatabase> {
   $QuotesTable get quotes => attachedDatabase.quotes;
+}
+mixin _$HistorialSaldosDaoMixin on DatabaseAccessor<AppDatabase> {
+  $HistorialSaldosTable get historialSaldos => attachedDatabase.historialSaldos;
 }

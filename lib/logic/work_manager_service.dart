@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+
 import 'package:workmanager/workmanager.dart';
 import 'package:monity/logic/notification_service.dart';
 import 'package:monity/data/database.dart';
@@ -6,6 +7,8 @@ import 'package:monity/logic/finance_service.dart';
 
 const dailyQuoteTask = "dailyQuote";
 const monthlySavingsTask = "monthlySavings";
+const forceSavingsTask = "forceSavings";
+const forceDailyQuoteTask = "forceDailyQuote";
 
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -27,6 +30,19 @@ void callbackDispatcher() {
           final financeService = FinanceService(db);
           final savings = await financeService.calculatePreviousMonthSavings();
           await notificationService.sendSavingsNotification(savings);
+
+
+        }
+        break;
+      case forceSavingsTask:
+        final financeService = FinanceService(db);
+        final savings = await financeService.calculatePreviousMonthSavings();
+        await notificationService.sendSavingsNotification(savings);
+        break;
+      case forceDailyQuoteTask:
+        final quote = await db.quotesDao.getUnusedQuote();
+        if (quote != null) {
+          await notificationService.showTestNotification(quote.quoteText);
         }
         break;
     }
@@ -48,7 +64,6 @@ class WorkManagerService {
     if (Platform.isAndroid || Platform.isIOS) {
       await Workmanager().initialize(
         callbackDispatcher,
-        isInDebugMode: true,
       );
     }
   }
@@ -73,9 +88,24 @@ class WorkManagerService {
     }
   }
 
+  Future<void> triggerDailyQuoteNotification() async {
+    if (Platform.isAndroid || Platform.isIOS) {
+      await Workmanager().registerOneOffTask(
+        '3', // Different ID
+        forceDailyQuoteTask,
+      );
+    }
+  }
+
   Future<void> cancelAllTasks() async {
     if (Platform.isAndroid || Platform.isIOS) {
       await Workmanager().cancelAll();
+    }
+  }
+
+  Future<void> cancelDailyQuoteTask() async {
+    if (Platform.isAndroid || Platform.isIOS) {
+      await Workmanager().cancelByUniqueName('1');
     }
   }
 }

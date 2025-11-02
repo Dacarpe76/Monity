@@ -5,6 +5,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:monity/data/currencies.dart';
 import 'package:monity/data/database.dart';
+import 'package:monity/logic/work_manager_service.dart';
 import 'package:monity/providers.dart';
 import 'package:monity/ui/screens/add_category_screen.dart';
 import 'package:csv/csv.dart';
@@ -14,6 +15,7 @@ import 'package:monity/ui/utils/currency_formatter.dart';
 
 import 'dart:io';
 import 'dart:convert';
+// import 'dart:math';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -103,25 +105,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               children: [
                 ListTile(
-                  leading: const Icon(Icons.download),
-                  title: const Text('Exportar transacciones a CSV (Nuevo)'),
-                  onTap: () => _exportCsvNew(ref, context),
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Disparador de Notificaciones'),
+                  onTap: () => WorkManagerService().triggerDailyQuoteNotification(),
                 ),
                 ListTile(
                   leading: const Icon(Icons.download),
-                  title: const Text('Exportar transacciones a CSV (Antiguo)'),
-                  onTap: () => _exportCsvOld(ref, context),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.upload),
-                  title: const Text('Importar transacciones desde CSV (Nuevo)'),
-                  onTap: () => _importCsvNew(ref, context),
+                  title: const Text('Exportar a CSV'),
+                  onTap: () => _exportToCsv(ref, context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.upload),
-                  title: const Text('Importar transacciones desde CSV (Antiguo)'),
-                  onTap: () => _importCsvOld(ref, context),
+                  title: const Text('Importar desde CSV'),
+                  onTap: () => _importFromCsv(ref, context),
                 ),
                 const Divider(),
                 ListTile(
@@ -235,84 +231,105 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final cuentasStream = ref.watch(cuentasDaoProvider).watchAllCuentas();
     final currency = ref.watch(currencyProvider);
 
-    return StreamBuilder<List<Cuenta>>(
-      stream: cuentasStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return ListTile(
-            title: const Text('No hay cuentas'),
-            subtitle: const Text('Añade una cuenta para empezar'),
-            onTap: () => _addAccount(context, ref),
-          );
-        }
+    final settings = ref.watch(appSettingsProvider);
 
-        final cuentas = snapshot.data!;
-
+    return settings.when(
+      data: (appSettings) {
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                'Recuerda que el orden de la cuentas es importante',
-                style: TextStyle(
-                    color: Colors.orange.shade800,
-                    fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            ReorderableListView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              onReorder: (oldIndex, newIndex) async {
-                if (oldIndex < newIndex) {
-                  newIndex -= 1;
-                }
-                final reorderedCuentas = List.of(cuentas);
-                final movedCuenta = reorderedCuentas.removeAt(oldIndex);
-                reorderedCuentas.insert(newIndex, movedCuenta);
-
-                for (var i = 0; i < reorderedCuentas.length; i++) {
-                  await ref
-                      .read(cuentasDaoProvider)
-                      .updateOrden(reorderedCuentas[i].id, i);
-                }
+            SwitchListTile(
+              title: const Text('Control automático de Monity'),
+              value: appSettings.monityControlEnabled,
+              onChanged: (value) {
+                ref.read(appSettingsDaoProvider).updateSettings(
+                      AppSettingsCompanion(monityControlEnabled: drift.Value(value)),
+                    );
               },
-              children: [
-                for (final cuenta in cuentas)
-                  ListTile(
-                    key: ValueKey(cuenta.id),
-                    title: Text(cuenta.nombre),
-                    subtitle: Text(
-                        'Saldo: ${formatCurrency(cuenta.saldoActual, currency.symbol)} / Límite: ${formatCurrency(cuenta.limiteGastoMensual, currency.symbol)} / Máximo: ${formatCurrency(cuenta.saldoMaximoMensual, currency.symbol)}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+            ),
+            StreamBuilder<List<Cuenta>>(
+              stream: cuentasStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return ListTile(
+                    title: const Text('No hay cuentas'),
+                    subtitle: const Text('Añade una cuenta para empezar'),
+                    onTap: () => _addAccount(context, ref),
+                  );
+                }
+
+                final cuentas = snapshot.data!;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        'Recuerda que el orden de la cuentas es importante',
+                        style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    ReorderableListView(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onReorder: (oldIndex, newIndex) async {
+                        if (oldIndex < newIndex) {
+                          newIndex -= 1;
+                        }
+                        final reorderedCuentas = List.of(cuentas);
+                        final movedCuenta = reorderedCuentas.removeAt(oldIndex);
+                        reorderedCuentas.insert(newIndex, movedCuenta);
+
+                        for (var i = 0; i < reorderedCuentas.length; i++) {
+                          await ref
+                              .read(cuentasDaoProvider)
+                              .updateOrden(reorderedCuentas[i].id, i);
+                        }
+                      },
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _editAccount(context, ref, cuenta),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => _deleteAccount(context, ref, cuenta),
-                        ),
+                        for (final cuenta in cuentas)
+                          ListTile(
+                            key: ValueKey(cuenta.id),
+                            title: Text(cuenta.nombre),
+                            subtitle: Text('Saldo: ${formatCurrency(cuenta.saldoActual, currency.symbol)} / Límite: ${formatCurrency(cuenta.limiteGastoMensual, currency.symbol)} / Máximo: ${formatCurrency(cuenta.saldoMaximoMensual, currency.symbol)}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => _editAccount(context, ref, cuenta),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  onPressed: () => _deleteAccount(context, ref, cuenta),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-              ],
-            ),
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('Añadir nueva cuenta'),
-              onTap: () => _addAccount(context, ref),
+                    ListTile(
+                      leading: const Icon(Icons.add),
+                      title: const Text('Añadir nueva cuenta'),
+                      onTap: () => _addAccount(context, ref),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
 
@@ -430,16 +447,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final dao = ref.read(cuentasDaoProvider);
+              final cuentasDao = ref.read(cuentasDaoProvider); //
               final newAccount = CuentasCompanion.insert(
                 nombre: nombreController.text,
                 saldoActual: double.parse(saldoActualController.text),
                 saldoMaximoMensual:
                     double.parse(saldoMaximoMensualController.text),
                 limiteGastoMensual: double.parse(limiteGastoController.text),
-                orden: drift.Value((await dao.allCuentas).length),
+                orden: drift.Value((await cuentasDao.allCuentas).length),
               );
-              await dao.upsertCuenta(newAccount);
+              await cuentasDao.upsertCuenta(newAccount);
               if (!context.mounted) return;
               Navigator.of(context).pop();
             },
@@ -450,85 +467,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _editAccount(BuildContext context, WidgetRef ref, Cuenta cuenta) {
-    final nombreController = TextEditingController(text: cuenta.nombre);
-    final saldoActualController =
-        TextEditingController(text: cuenta.saldoActual.toString());
-    final saldoMaximoController =
-        TextEditingController(text: cuenta.saldoMaximoMensual.toString());
-    final limiteGastoController =
-        TextEditingController(text: cuenta.limiteGastoMensual.toString());
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar Cuenta'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-              ),
-              TextField(
-                controller: saldoActualController,
-                decoration: const InputDecoration(labelText: 'Saldo Actual'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: saldoMaximoController,
-                decoration:
-                    const InputDecoration(labelText: 'Saldo Máximo Mensual'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: limiteGastoController,
-                decoration:
-                    const InputDecoration(labelText: 'Límite de Gasto Mensual'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newNombre = nombreController.text;
-              final newSaldo = double.tryParse(saldoActualController.text) ??
-                  cuenta.saldoActual;
-              final newSaldoMaximo =
-                  double.tryParse(saldoMaximoController.text) ??
-                      cuenta.saldoMaximoMensual;
-              final newLimiteGasto =
-                  double.tryParse(limiteGastoController.text) ??
-                      cuenta.limiteGastoMensual;
-              final updatedCuenta = cuenta.copyWith(
-                nombre: newNombre,
-                saldoActual: newSaldo,
-                saldoMaximoMensual: newSaldoMaximo,
-                limiteGastoMensual: newLimiteGasto,
-              );
-              await ref
-                  .read(cuentasDaoProvider)
-                  .upsertCuenta(updatedCuenta.toCompanion(true));
-              if (!context.mounted) return;
-              Navigator.of(context).pop();
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _deleteAccount(BuildContext context, WidgetRef ref, Cuenta cuenta) {
     showDialog(
-      context: context,
+      context: context, 
       builder: (context) => AlertDialog(
         title: const Text('Eliminar Cuenta'),
         content: Text(
@@ -551,87 +494,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _editCategory(BuildContext context, WidgetRef ref, Categoria category) {
-    final nombreController = TextEditingController(text: category.nombre);
-    Color selectedColor = _safeParseColor(category.color);
-    TipoCategoria tipo = category.tipo;
+  void _editAccount(BuildContext context, WidgetRef ref, Cuenta cuenta) {
+    final nombreController = TextEditingController(text: cuenta.nombre);
+    final saldoActualController =
+        TextEditingController(text: cuenta.saldoActual.toString());
+    final saldoMaximoMensualController =
+        TextEditingController(text: cuenta.saldoMaximoMensual.toString());
+    final limiteGastoController =
+        TextEditingController(text: cuenta.limiteGastoMensual.toString());
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Editar Categoría'),
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nombreController,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
-                  ),
-                  DropdownButton<TipoCategoria>(
-                    value: tipo,
-                    items: TipoCategoria.values.map((TipoCategoria aType) {
-                      return DropdownMenuItem<TipoCategoria>(
-                        value: aType,
-                        child: Text(aType.toString().split('.').last),
-                      );
-                    }).toList(),
-                    onChanged: (newValue) {
-                      setState(() {
-                        tipo = newValue!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Color:'),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Selecciona un color'),
-                              content: SingleChildScrollView(
-                                child: ColorPicker(
-                                  pickerColor: selectedColor,
-                                  onColorChanged: (color) {
-                                    setState(() {
-                                      selectedColor = color;
-                                    });
-                                  },
-                                  pickerAreaHeightPercent: 0.8,
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: const Text('Hecho'),
-                                )
-                              ],
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: selectedColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+        title: const Text('Editar Cuenta'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nombreController,
+                decoration: const InputDecoration(labelText: 'Nombre'),
               ),
-            );
-          },
+              TextField(
+                controller: saldoActualController,
+                decoration: const InputDecoration(labelText: 'Saldo Actual'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: saldoMaximoMensualController,
+                decoration:
+                    const InputDecoration(labelText: 'Saldo Máximo Mensual'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: limiteGastoController,
+                decoration:
+                    const InputDecoration(labelText: 'Límite de Gasto Mensual'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -640,15 +542,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              final colorString = '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
-              final updatedCategory = category.copyWith(
+              final cuentasDao = ref.read(cuentasDaoProvider);
+              final updatedAccount = cuenta.copyWith(
                 nombre: nombreController.text,
-                tipo: tipo,
-                color: colorString,
+                saldoActual: double.parse(saldoActualController.text),
+                saldoMaximoMensual:
+                    double.parse(saldoMaximoMensualController.text),
+                limiteGastoMensual: double.parse(limiteGastoController.text),
               );
-              await ref
-                  .read(categoriasDaoProvider)
-                  .upsertCategoria(updatedCategory.toCompanion(true));
+              await cuentasDao.upsertCuenta(updatedAccount.toCompanion(true));
               if (!context.mounted) return;
               Navigator.of(context).pop();
             },
@@ -659,114 +561,441 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _importCsvOld(WidgetRef ref, BuildContext context) async {
-    final bool currentContextMounted = context.mounted;
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result != null) {
-        File file = File(result.files.single.path!);
-        final content = await file.readAsString(encoding: Latin1Codec());
-        final List<List<dynamic>> rows =
-            const CsvToListConverter().convert(content);
-        rows.removeAt(0); // Remove header
-        final cuentasDao = ref.read(cuentasDaoProvider);
-        final categoriasDao = ref.read(categoriasDaoProvider);
-        final gastosDao = ref.read(gastosDaoProvider);
-        final ingresosDao = ref.read(ingresosDaoProvider);
-        final transaccionesDao = ref.read(transaccionesDaoProvider);
-        for (final row in rows) {
-          final fecha = DateTime.parse(row[1]);
-          final cuentaNombre = row[2].toString();
-          final tipoString = row[3].toString().split('.').last;
-          final cantidad = double.parse(row[4].toString());
-          final concepto = row[5].toString();
-          final categoriaNombre = row[6].toString();
-          var cuenta = await (cuentasDao.select(cuentasDao.cuentas)
-                ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
-              .getSingleOrNull();
-          if (cuenta == null) {
-            final newAccount = CuentasCompanion.insert(
-              nombre: cuentaNombre,
-              saldoActual: 0,
-              saldoMaximoMensual: 1000,
-              limiteGastoMensual: 500,
-              orden: drift.Value((await cuentasDao.allCuentas).length),
-            );
-            await cuentasDao.upsertCuenta(newAccount);
-            cuenta = await (cuentasDao.select(cuentasDao.cuentas)
-                  ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
-                .getSingleOrNull();
-          }
-          final tipo = tipoString == 'ingreso'
-              ? TipoCategoria.ingreso
-              : TipoCategoria.gasto;
-          var categoria = await categoriasDao.getCategoryByNameAndType(
-              categoriaNombre, tipo.index);
-          if (categoria == null) {
-            final newCategory = CategoriasCompanion.insert(
-              nombre: categoriaNombre,
-              tipo: tipo,
-              color: '#FF0000',
-            );
-            await categoriasDao.upsertCategoria(newCategory);
-            categoria = await categoriasDao.getCategoryByNameAndType(
-                categoriaNombre, tipo.index);
-          }
-          if (tipo == TipoCategoria.gasto) {
-            final gasto = GastosCompanion.insert(
-              cantidad: cantidad,
-              concepto: concepto,
-              fecha: fecha,
-              idCategoria: categoria!.id,
-            );
-            final gastoId = await gastosDao.insertGasto(gasto);
-            final transaccion = TransaccionesCompanion.insert(
-              idCuenta: cuenta!.id,
-              cantidad: cantidad,
-              tipo: TipoTransaccion.gasto,
-              fecha: fecha,
-              idGasto: drift.Value(gastoId),
-            );
-            await transaccionesDao.insertTransaccion(transaccion);
-          } else {
-            final ingreso = IngresosCompanion.insert(
-              cantidadTotal: cantidad,
-              fecha: fecha,
-              idCategoria: categoria!.id,
-            );
-            final ingresoId = await ingresosDao.insertIngreso(ingreso);
-            final transaccion = TransaccionesCompanion.insert(
-              idCuenta: cuenta!.id,
-              cantidad: cantidad,
-              tipo: TipoTransaccion.ingreso,
-              fecha: fecha,
-              idIngreso: drift.Value(ingresoId),
-            );
-            await transaccionesDao.insertTransaccion(transaccion);
-          }
-          final updatedCuenta = cuenta.copyWith(
-            saldoActual: cuenta.saldoActual + cantidad,
-          );
-          await cuentasDao.upsertCuenta(updatedCuenta.toCompanion(true));
-        }
-        if (!currentContextMounted) return;
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('CSV importado correctamente')),
-          );
-        }
-      }
-    } catch (e) {
-      if (!currentContextMounted) return;
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al importar el CSV: $e')),
-        );
-      }
-    }
-  }
 
-  void _exportCsvOld(WidgetRef ref, BuildContext context) async {
+
+    void _editCategory(BuildContext context, WidgetRef ref, Categoria category) {
+
+
+
+      final nombreController = TextEditingController(text: category.nombre);
+
+
+
+      Color selectedColor = _safeParseColor(category.color);
+
+
+
+      TipoCategoria tipo = category.tipo;
+
+
+
+  
+
+
+
+      showDialog(
+
+
+
+        context: context,
+
+
+
+        builder: (context) => AlertDialog(
+
+
+
+          title: const Text('Editar Categoría'),
+
+
+
+          content: StatefulBuilder(
+
+
+
+            builder: (BuildContext context, StateSetter setState) {
+
+
+
+              return SingleChildScrollView(
+
+
+
+                child: Column(
+
+
+
+                  mainAxisSize: MainAxisSize.min,
+
+
+
+                  children: [
+
+
+
+                    TextField(
+
+
+
+                      controller: nombreController,
+
+
+
+                      decoration: const InputDecoration(labelText: 'Nombre'),
+
+
+
+                    ),
+
+
+
+                    DropdownButton<TipoCategoria>(
+
+
+
+                      value: tipo,
+
+
+
+                      items: TipoCategoria.values.map((TipoCategoria aType) {
+
+
+
+                        return DropdownMenuItem<TipoCategoria>(
+
+
+
+                          value: aType,
+
+
+
+                          child: Text(aType.toString().split('.').last),
+
+
+
+                        );
+
+
+
+                      }).toList(),
+
+
+
+                      onChanged: (newValue) {
+
+
+
+                        setState(() {
+
+
+
+                          tipo = newValue!;
+
+
+
+                        });
+
+
+
+                      },
+
+
+
+                    ),
+
+
+
+                    const SizedBox(height: 16),
+
+
+
+                    Row(
+
+
+
+                      children: [
+
+
+
+                        const Text('Color:'),
+
+
+
+                        const SizedBox(width: 10),
+
+
+
+                        GestureDetector(
+
+
+
+                          onTap: () {
+
+
+
+                            showDialog(
+
+
+
+                              context: context,
+
+
+
+                              builder: (context) => AlertDialog(
+
+
+
+                                title: const Text('Selecciona un color'),
+
+
+
+                                content: SingleChildScrollView(
+
+
+
+                                  child: ColorPicker(
+
+
+
+                                    pickerColor: selectedColor,
+
+
+
+                                    onColorChanged: (color) {
+
+
+
+                                      setState(() {
+
+
+
+                                        selectedColor = color;
+
+
+
+                                      });
+
+
+
+                                    },
+
+
+
+                                    pickerAreaHeightPercent: 0.8,
+
+
+
+                                  ),
+
+
+
+                                ),
+
+
+
+                                actions: [
+
+
+
+                                  TextButton(
+
+
+
+                                    onPressed: () {
+
+
+
+                                      Navigator.of(context).pop();
+
+
+
+                                    },
+
+
+
+                                    child: const Text('Hecho'),
+
+
+
+                                  )
+
+
+
+                                ],
+
+
+
+                              ),
+
+
+
+                            );
+
+
+
+                          },
+
+
+
+                          child: Container(
+
+
+
+                            width: 36,
+
+
+
+                            height: 36,
+
+
+
+                            decoration: BoxDecoration(
+
+
+
+                              color: selectedColor,
+
+
+
+                              shape: BoxShape.circle,
+
+
+
+                            ),
+
+
+
+                          ),
+
+
+
+                        ),
+
+
+
+                      ],
+
+
+
+                    ),
+
+
+
+                  ],
+
+
+
+                ),
+
+
+
+              );
+
+
+
+            },
+
+
+
+          ),
+
+
+
+          actions: [
+
+
+
+            TextButton(
+
+
+
+              onPressed: () => Navigator.of(context).pop(),
+
+
+
+              child: const Text('Cancelar'),
+
+
+
+            ),
+
+
+
+            TextButton(
+
+
+
+              onPressed: () async {
+
+
+
+                final colorString = '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
+
+
+
+                final updatedCategory = category.copyWith(
+
+
+
+                  nombre: nombreController.text,
+
+
+
+                  tipo: tipo,
+
+
+
+                  color: colorString,
+
+
+
+                );
+
+
+
+                final categoriasDao = ref.read(categoriasDaoProvider);
+
+
+
+                await categoriasDao
+
+
+
+                    .upsertCategoria(updatedCategory.toCompanion(true));
+
+
+
+                if (!context.mounted) return;
+
+
+
+                Navigator.of(context).pop();
+
+
+
+              },
+
+
+
+              child: const Text('Guardar'),
+
+
+
+            ),
+
+
+
+          ],
+
+
+
+        ),
+
+
+
+      );
+
+
+
+    }
+
+
+
+  
+
+
+
+    void _exportToCsv(WidgetRef ref, BuildContext context) async {
     final transactions =
         await ref.read(transaccionesDaoProvider).allTransacciones;
     final cuentas = await ref.read(cuentasDaoProvider).allCuentas;
@@ -780,236 +1009,224 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final ingresosMap = {for (var i in ingresos) i.id: i};
 
     List<List<dynamic>> rows = [];
-    rows.add(
-        ['ID', 'Fecha', 'Cuenta', 'Tipo', 'Cantidad', 'Concepto', 'Categoria']);
+    rows.add([
+      'id_transaccion',
+      'fecha',
+      'tipo_transaccion',
+      'cantidad',
+      'id_cuenta',
+      'nombre_cuenta',
+      'id_categoria',
+      'nombre_categoria',
+      'tipo_categoria',
+      'color_categoria',
+      'concepto'
+    ]);
 
     for (var tx in transactions) {
       final cuenta = cuentasMap[tx.idCuenta];
       String concepto = '';
-      String categoriaNombre = '';
+      Categoria? categoria;
 
       if (tx.tipo == TipoTransaccion.gasto && tx.idGasto != null) {
         final gasto = gastosMap[tx.idGasto];
         if (gasto != null) {
           concepto = gasto.concepto;
-          final categoria = categoriasMap[gasto.idCategoria];
-          if (categoria != null) {
-            categoriaNombre = categoria.nombre;
-          }
+          categoria = categoriasMap[gasto.idCategoria];
         }
       } else if (tx.tipo == TipoTransaccion.ingreso && tx.idIngreso != null) {
         final ingreso = ingresosMap[tx.idIngreso];
         if (ingreso != null) {
-          final categoria = categoriasMap[ingreso.idCategoria];
-          if (categoria != null) {
-            categoriaNombre = categoria.nombre;
-          }
+          categoria = categoriasMap[ingreso.idCategoria];
         }
       }
 
       rows.add([
         tx.id,
         tx.fecha.toIso8601String(),
-        cuenta?.nombre ?? 'N/A',
         tx.tipo.toString(),
         tx.cantidad,
-        concepto,
-        categoriaNombre,
-      ]);
-    }
-    String csv = const ListToCsvConverter().convert(rows);
-    final directory = await getApplicationDocumentsDirectory();
-    final path = "${directory.path}/monity_transactions_old.csv";
-    final file = File(path);
-    await file.writeAsString(csv, encoding: Latin1Codec());
-    if (!context.mounted) return;
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(path)],
-        text: 'Transacciones de Monity',
-        subject: 'Monity Transactions',
-        sharePositionOrigin: Rect.fromLTWH(
-            0, 0, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height / 2),
-      ),
-    );
-  }
-
-  void _importCsvNew(WidgetRef ref, BuildContext context) async {
-    final bool currentContextMounted = context.mounted;
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
-      if (result != null) {
-        File file = File(result.files.single.path!);
-        final content = await file.readAsString(encoding: utf8);
-        final List<List<dynamic>> rows =
-            const CsvToListConverter().convert(content);
-        rows.removeAt(0); // Remove header
-        final cuentasDao = ref.read(cuentasDaoProvider);
-        final categoriasDao = ref.read(categoriasDaoProvider);
-        final gastosDao = ref.read(gastosDaoProvider);
-        final ingresosDao = ref.read(ingresosDaoProvider);
-        final transaccionesDao = ref.read(transaccionesDaoProvider);
-        for (final row in rows) {
-          final fecha = DateTime.parse(row[1]);
-          final cuentaNombre = row[2].toString();
-          final tipoString = row[3].toString().split('.').last;
-          final cantidad = double.parse(row[4].toString());
-          final concepto = row[5].toString();
-          final categoriaNombre = row[6].toString();
-          var cuenta = await (cuentasDao.select(cuentasDao.cuentas)
-                ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
-              .getSingleOrNull();
-          if (cuenta == null) {
-            final newAccount = CuentasCompanion.insert(
-              nombre: cuentaNombre,
-              saldoActual: 0,
-              saldoMaximoMensual: 1000,
-              limiteGastoMensual: 500,
-              orden: drift.Value((await cuentasDao.allCuentas).length),
-            );
-            await cuentasDao.upsertCuenta(newAccount);
-            cuenta = await (cuentasDao.select(cuentasDao.cuentas)
-                  ..where((tbl) => tbl.nombre.equals(cuentaNombre)))
-                .getSingleOrNull();
-          }
-          final tipo = tipoString == 'ingreso'
-              ? TipoCategoria.ingreso
-              : TipoCategoria.gasto;
-          var categoria = await categoriasDao.getCategoryByNameAndType(
-              categoriaNombre, tipo.index);
-          if (categoria == null) {
-            final newCategory = CategoriasCompanion.insert(
-              nombre: categoriaNombre,
-              tipo: tipo,
-              color: '#FF0000',
-            );
-            await categoriasDao.upsertCategoria(newCategory);
-            categoria = await categoriasDao.getCategoryByNameAndType(
-                categoriaNombre, tipo.index);
-          }
-          if (tipo == TipoCategoria.gasto) {
-            final gasto = GastosCompanion.insert(
-              cantidad: cantidad,
-              concepto: concepto,
-              fecha: fecha,
-              idCategoria: categoria!.id,
-            );
-            final gastoId = await gastosDao.insertGasto(gasto);
-            final transaccion = TransaccionesCompanion.insert(
-              idCuenta: cuenta!.id,
-              cantidad: cantidad,
-              tipo: TipoTransaccion.gasto,
-              fecha: fecha,
-              idGasto: drift.Value(gastoId),
-            );
-            await transaccionesDao.insertTransaccion(transaccion);
-          } else {
-            final ingreso = IngresosCompanion.insert(
-              cantidadTotal: cantidad,
-              fecha: fecha,
-              idCategoria: categoria!.id,
-            );
-            final ingresoId = await ingresosDao.insertIngreso(ingreso);
-            final transaccion = TransaccionesCompanion.insert(
-              idCuenta: cuenta!.id,
-              cantidad: cantidad,
-              tipo: TipoTransaccion.ingreso,
-              fecha: fecha,
-              idIngreso: drift.Value(ingresoId),
-            );
-            await transaccionesDao.insertTransaccion(transaccion);
-          }
-          final updatedCuenta = cuenta.copyWith(
-            saldoActual: cuenta.saldoActual + cantidad,
-          );
-          await cuentasDao.upsertCuenta(updatedCuenta.toCompanion(true));
-        }
-        if (!currentContextMounted) return;
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('CSV importado correctamente')),
-          );
-        }
-      }
-    } catch (e) {
-      if (!currentContextMounted) return;
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al importar el CSV: $e')),
-        );
-      }
-    }
-  }
-
-  void _exportCsvNew(WidgetRef ref, BuildContext context) async {
-    final transactions =
-        await ref.read(transaccionesDaoProvider).allTransacciones;
-    final cuentas = await ref.read(cuentasDaoProvider).allCuentas;
-    final categorias = await ref.read(categoriasDaoProvider).allCategorias;
-    final gastos = await ref.read(gastosDaoProvider).allGastos;
-    final ingresos = await ref.read(ingresosDaoProvider).allIngresos;
-
-    final cuentasMap = {for (var c in cuentas) c.id: c};
-    final categoriasMap = {for (var c in categorias) c.id: c};
-    final gastosMap = {for (var g in gastos) g.id: g};
-    final ingresosMap = {for (var i in ingresos) i.id: i};
-
-    List<List<dynamic>> rows = [];
-    rows.add(
-        ['ID', 'Fecha', 'Cuenta', 'Tipo', 'Cantidad', 'Concepto', 'Categoria']);
-
-    for (var tx in transactions) {
-      final cuenta = cuentasMap[tx.idCuenta];
-      String concepto = '';
-      String categoriaNombre = '';
-
-      if (tx.tipo == TipoTransaccion.gasto && tx.idGasto != null) {
-        final gasto = gastosMap[tx.idGasto];
-        if (gasto != null) {
-          concepto = gasto.concepto;
-          final categoria = categoriasMap[gasto.idCategoria];
-          if (categoria != null) {
-            categoriaNombre = categoria.nombre;
-          }
-        }
-      } else if (tx.tipo == TipoTransaccion.ingreso && tx.idIngreso != null) {
-        final ingreso = ingresosMap[tx.idIngreso];
-        if (ingreso != null) {
-          final categoria = categoriasMap[ingreso.idCategoria];
-          if (categoria != null) {
-            categoriaNombre = categoria.nombre;
-          }
-        }
-      }
-
-      rows.add([
-        tx.id,
-        tx.fecha.toIso8601String(),
+        cuenta?.id ?? 'N/A',
         cuenta?.nombre ?? 'N/A',
-        tx.tipo.toString(),
-        tx.cantidad,
+        categoria?.id ?? 'N/A',
+        categoria?.nombre ?? 'N/A',
+        categoria?.tipo.toString() ?? 'N/A',
+        categoria?.color ?? 'N/A',
         concepto,
-        categoriaNombre,
       ]);
     }
     String csv = const ListToCsvConverter().convert(rows);
     final directory = await getApplicationDocumentsDirectory();
     final path = "${directory.path}/monity_transactions.csv";
-    final file = File(path);
-    await file.writeAsString(csv, encoding: utf8);
+    await File(path).writeAsString(csv, encoding: utf8);
     if (!context.mounted) return;
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(path)],
         text: 'Transacciones de Monity',
         subject: 'Monity Transactions',
-        sharePositionOrigin: Rect.fromLTWH(
-            0, 0, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height / 2),
+        sharePositionOrigin: Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height / 2),
       ),
     );
   }
 
-  void _showResetConfirmationDialog(WidgetRef ref, BuildContext context) {
+
+
+  
+
+
+
+    void _importFromCsv(WidgetRef ref, BuildContext context) async {
+    final bool currentContextMounted = context.mounted;
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      if (result != null) {
+        File file = File(result.files.single.path!);
+        final content = await file.readAsString();
+        final List<List<dynamic>> rows =
+            const CsvToListConverter().convert(content);
+        final header = rows.removeAt(0).map((e) => e.toString()).toList();
+
+        final idTransaccionIndex = header.indexOf('id_transaccion');
+        final fechaIndex = header.indexOf('fecha');
+        final tipoTransaccionIndex = header.indexOf('tipo_transaccion');
+        final cantidadIndex = header.indexOf('cantidad');
+        final idCuentaIndex = header.indexOf('id_cuenta');
+        final nombreCuentaIndex = header.indexOf('nombre_cuenta');
+        final idCategoriaIndex = header.indexOf('id_categoria');
+        final nombreCategoriaIndex = header.indexOf('nombre_categoria');
+        final tipoCategoriaIndex = header.indexOf('tipo_categoria');
+        final colorCategoriaIndex = header.indexOf('color_categoria');
+        final conceptoIndex = header.indexOf('concepto');
+
+
+        if ([
+          idTransaccionIndex,
+          fechaIndex,
+          tipoTransaccionIndex,
+          cantidadIndex,
+          idCuentaIndex,
+          nombreCuentaIndex,
+          idCategoriaIndex,
+          nombreCategoriaIndex,
+          tipoCategoriaIndex,
+          colorCategoriaIndex,
+          conceptoIndex
+        ].contains(-1)) {
+          throw Exception('La cabecera del CSV no es válida. Faltan una o más columnas requeridas.');
+        }
+
+        final cuentasDao = ref.read(cuentasDaoProvider);
+        final categoriasDao = ref.read(categoriasDaoProvider);
+        final gastosDao = ref.read(gastosDaoProvider);
+        final ingresosDao = ref.read(ingresosDaoProvider);
+        final transaccionesDao = ref.read(transaccionesDaoProvider);
+
+        for (final row in rows) {
+          final idTransaccion = int.parse(row[idTransaccionIndex].toString());
+          final fecha = DateTime.parse(row[fechaIndex].toString());
+          final tipoTransaccion = row[tipoTransaccionIndex].toString().split('.').last == 'gasto' ? TipoTransaccion.gasto : TipoTransaccion.ingreso;
+          final cantidad = double.parse(row[cantidadIndex].toString());
+          final idCuenta = int.parse(row[idCuentaIndex].toString());
+          final nombreCuenta = row[nombreCuentaIndex].toString();
+          final idCategoria = int.parse(row[idCategoriaIndex].toString());
+          final nombreCategoria = row[nombreCategoriaIndex].toString();
+          final tipoCategoria = row[tipoCategoriaIndex].toString().split('.').last == 'gasto' ? TipoCategoria.gasto : TipoCategoria.ingreso;
+          final colorCategoria = row[colorCategoriaIndex].toString();
+          final concepto = row[conceptoIndex].toString();
+
+          // Import account
+          var cuenta = await cuentasDao.getCuentaById(idCuenta);
+          if (cuenta == null) {
+            final newAccount = CuentasCompanion.insert(
+              id: drift.Value(idCuenta),
+              nombre: nombreCuenta,
+              saldoActual: 0,
+              saldoMaximoMensual: 1000,
+              limiteGastoMensual: 500,
+              orden: drift.Value((await cuentasDao.allCuentas).length),
+            );
+            await cuentasDao.upsertCuenta(newAccount);
+            cuenta = await cuentasDao.getCuentaById(idCuenta);
+          }
+
+          // Import category
+          var categoria = await categoriasDao.getCategoryById(idCategoria);
+          if (categoria == null) {
+            final newCategory = CategoriasCompanion.insert(
+              id: drift.Value(idCategoria),
+              nombre: nombreCategoria,
+              tipo: tipoCategoria,
+              color: colorCategoria,
+            );
+            await categoriasDao.upsertCategoria(newCategory);
+            categoria = await categoriasDao.getCategoryById(idCategoria);
+          }
+
+          // Import transaction
+          final transaccion = await transaccionesDao.getTransaccionById(idTransaccion);
+          if (transaccion == null) {
+            if (tipoTransaccion == TipoTransaccion.gasto) {
+              final gasto = GastosCompanion.insert(
+                cantidad: cantidad.abs(),
+                concepto: concepto,
+                fecha: fecha,
+                idCategoria: categoria!.id,
+              );
+              final gastoId = await gastosDao.insertGasto(gasto);
+              final newTransaccion = TransaccionesCompanion.insert(
+                id: drift.Value(idTransaccion),
+                idCuenta: cuenta!.id,
+                cantidad: cantidad,
+                tipo: TipoTransaccion.gasto,
+                fecha: fecha,
+                idGasto: drift.Value(gastoId),
+              );
+              await transaccionesDao.insertTransaccion(newTransaccion);
+            } else {
+              final ingreso = IngresosCompanion.insert(
+                cantidadTotal: cantidad,
+                fecha: fecha,
+                idCategoria: categoria!.id,
+              );
+              final ingresoId = await ingresosDao.insertIngreso(ingreso);
+              final newTransaccion = TransaccionesCompanion.insert(
+                id: drift.Value(idTransaccion),
+                idCuenta: cuenta!.id,
+                cantidad: cantidad,
+                tipo: TipoTransaccion.ingreso,
+                fecha: fecha,
+                idIngreso: drift.Value(ingresoId),
+              );
+              await transaccionesDao.insertTransaccion(newTransaccion);
+            }
+          }
+        }
+
+        if (!currentContextMounted) return;
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('CSV importado correctamente')),
+          );
+        }
+      }
+    } catch (e) {
+      if (!currentContextMounted) return;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al importar el CSV: $e')),
+        );
+      }
+    }
+  }
+
+
+
+  
+
+
+
+    void _showResetConfirmationDialog(WidgetRef ref, BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

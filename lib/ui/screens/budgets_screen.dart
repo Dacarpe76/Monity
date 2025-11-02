@@ -10,24 +10,34 @@ class BudgetsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cuentas = ref.watch(cuentasProvider);
+    final settings = ref.watch(appSettingsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Límites de Gasto por Cuenta'),
       ),
-      body: cuentas.when(
-        data: (data) {
-          if (data.isEmpty) {
-            return const Center(
-              child: Text('No hay cuentas para mostrar.'),
-            );
-          }
-          return ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              final cuenta = data[index];
-              return AccountBudgetCard(cuenta: cuenta);
+      body: settings.when(
+        data: (appSettings) {
+          return cuentas.when(
+            data: (data) {
+              if (data.isEmpty) {
+                return const Center(
+                  child: Text('No hay cuentas para mostrar.'),
+                );
+              }
+              return ListView.builder(
+                itemCount: data.length,
+                itemBuilder: (context, index) {
+                  final cuenta = data[index];
+                  return AccountBudgetCard(
+                    cuenta: cuenta,
+                    monityControlEnabled: false,
+                  );
+                },
+              );
             },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Error: $err')),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -39,8 +49,10 @@ class BudgetsScreen extends ConsumerWidget {
 
 class AccountBudgetCard extends ConsumerWidget {
   final Cuenta cuenta;
+  final bool monityControlEnabled;
 
-  const AccountBudgetCard({super.key, required this.cuenta});
+  const AccountBudgetCard(
+      {super.key, required this.cuenta, required this.monityControlEnabled});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -64,8 +76,13 @@ class AccountBudgetCard extends ConsumerWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit),
-                  onPressed: () =>
-                      _showEditLimitDialog(context, ref, cuenta),
+                  onPressed: () {
+                    if (monityControlEnabled) {
+                      _showEditPercentagesDialog(context, ref, cuenta);
+                    } else {
+                      _showEditLimitsDialog(context, ref, cuenta);
+                    }
+                  },
                 ),
               ],
             ),
@@ -90,23 +107,40 @@ class AccountBudgetCard extends ConsumerWidget {
     );
   }
 
-  void _showEditLimitDialog(
+  void _showEditLimitsDialog(
       BuildContext context, WidgetRef ref, Cuenta cuenta) {
-    final TextEditingController controller =
+    final limitController =
         TextEditingController(text: cuenta.limiteGastoMensual.toString());
+    final maxBalanceController =
+        TextEditingController(text: cuenta.saldoMaximoMensual.toString());
 
     showDialog(
       context: context,
       builder: (context) {
         return CustomAlertDialog(
-          title: 'Editar Límite de Gasto',
-          content: TextField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Nuevo límite',
-              prefixText: '€',
-            ),
+          title: 'Editar Límites Manualmente',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: limitController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Nuevo límite de gasto',
+                  prefixText: '€',
+                ),
+              ),
+              TextField(
+                controller: maxBalanceController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Nuevo saldo máximo mensual',
+                  prefixText: '€',
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -117,11 +151,79 @@ class AccountBudgetCard extends ConsumerWidget {
             TextButton(
               child: const Text('Guardar'),
               onPressed: () {
-                final newLimit =
-                    double.tryParse(controller.text.replaceAll(',', '.'));
-                if (newLimit != null && newLimit >= 0) {
+                final newLimit = double.tryParse(limitController.text.replaceAll(',', '.'));
+                final newMaxBalance = double.tryParse(maxBalanceController.text.replaceAll(',', '.'));
+                if (newLimit != null && newLimit >= 0 && newMaxBalance != null && newMaxBalance >= 0) {
                   final database = ref.read(databaseProvider);
-                  final updatedCuenta = cuenta.copyWith(limiteGastoMensual: newLimit);
+                  final updatedCuenta = cuenta.copyWith(
+                    limiteGastoMensual: newLimit,
+                    saldoMaximoMensual: newMaxBalance,
+                  );
+                  database.cuentasDao
+                      .upsertCuenta(updatedCuenta.toCompanion(true));
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEditPercentagesDialog(
+      BuildContext context, WidgetRef ref, Cuenta cuenta) {
+    final adjustmentController = TextEditingController(
+        text: (cuenta.adjustmentPercentage * 100).toString());
+    final maxBalanceController = TextEditingController(
+        text: (cuenta.maxBalancePercentage * 100).toString());
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return CustomAlertDialog(
+          title: 'Editar Porcentajes de Ajuste',
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: adjustmentController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Porcentaje de Límite de Gasto',
+                  suffixText: '%',
+                ),
+              ),
+              TextField(
+                controller: maxBalanceController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Porcentaje de Saldo Máximo',
+                  suffixText: '%',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Colors.white70)),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Guardar'),
+              onPressed: () {
+                final newAdjustment = double.tryParse(adjustmentController.text.replaceAll(',', '.'));
+                final newMaxBalance = double.tryParse(maxBalanceController.text.replaceAll(',', '.'));
+
+                if (newAdjustment != null && newAdjustment >= 0 && newMaxBalance != null && newMaxBalance >= 0) {
+                  final database = ref.read(databaseProvider);
+                  final updatedCuenta = cuenta.copyWith(
+                    adjustmentPercentage: newAdjustment / 100,
+                    maxBalancePercentage: newMaxBalance / 100,
+                  );
                   database.cuentasDao
                       .upsertCuenta(updatedCuenta.toCompanion(true));
                   Navigator.of(context).pop();

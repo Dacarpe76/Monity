@@ -8,6 +8,8 @@ import 'package:monity/ui/screens/home_screen.dart';
 import 'package:logger/logger.dart';
 import 'package:monity/ui/screens/setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz;
+
 
 void main() async {
   final logger = Logger();
@@ -20,6 +22,7 @@ void main() async {
   await WorkManagerService().registerDailyQuoteTask();
   await WorkManagerService().registerMonthlySavingsTask();
   await NotificationService().init();
+  tz.initializeTimeZones();
 
   final prefs = await SharedPreferences.getInstance();
   final isSetupComplete = prefs.getBool('setup_complete') ?? false;
@@ -32,6 +35,22 @@ void main() async {
     // Usuario existente, ejecutar tareas de arranque
     final financeService = container.read(financeServiceProvider);
     logger.d('FinanceService created for existing user');
+    // Automatic budget adjustment
+    final now = DateTime.now();
+    final lastAdjustmentString = prefs.getString('last_budget_adjustment_date');
+    if (lastAdjustmentString == null) {
+      await financeService.performMonthlyBudgetAdjustment();
+      await prefs.setString('last_budget_adjustment_date', now.toIso8601String());
+      logger.d('First time budget adjustment performed.');
+    } else {
+      final lastAdjustmentDate = DateTime.parse(lastAdjustmentString);
+      if (now.month != lastAdjustmentDate.month || now.year != lastAdjustmentDate.year) {
+        await financeService.performMonthlyBudgetAdjustment();
+        await prefs.setString('last_budget_adjustment_date', now.toIso8601String());
+        logger.d('Monthly budget adjustment performed.');
+      }
+    }
+
     await financeService.handleMonthlyReset();
     logger.d('Monthly reset handled');
     await financeService.recalculateMonthlyAccumulated();

@@ -1,5 +1,8 @@
+
+
 import 'dart:math';
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:monity/data/database.dart';
 import 'package:csv/csv.dart';
 import 'package:logger/logger.dart';
@@ -9,6 +12,55 @@ class FinanceService {
   final AppDatabase _db;
 
   FinanceService(this._db);
+
+  Future<void> performMonthlyBudgetAdjustment() async {
+    final appSettings = await _db.appSettingsDao.getSettings();
+    if (!appSettings.monityControlEnabled) {
+      return; // Do nothing if Monity control is disabled
+    }
+
+    final allAccounts = await _db.cuentasDao.allCuentas;
+    final now = DateTime.now();
+
+    for (final account in allAccounts) {
+      if (['Objetivos futuros'].contains(account.nombre)) continue;
+
+      final List<double> spendings = await Future.wait([
+        _getSpendingForMonth(account.id, now.year, now.month - 1),
+        _getSpendingForMonth(account.id, now.year, now.month - 2),
+      ]);
+      final double averageSpending = (spendings[0] + spendings[1]) / 2;
+
+      final newMaxBalance = averageSpending * account.maxBalancePercentage;
+      final newSpendingLimit = averageSpending * account.adjustmentPercentage;
+
+      final updatedAccount = account.copyWith(
+        saldoMaximoMensual: newMaxBalance,
+        limiteGastoMensual: newSpendingLimit,
+      );
+      await _db.cuentasDao.upsertCuenta(updatedAccount.toCompanion(true));
+    }
+  }
+
+  Future<double> _getSpendingForMonth(int accountId, int year, int month) async {
+    final startDate = DateTime(year, month, 1);
+    final endDate = DateTime(year, month + 1, 0);
+
+    final transactions = await (_db.transaccionesDao.select(_db.transacciones)
+          ..where((tbl) =>
+              tbl.idCuenta.equals(accountId) &
+              tbl.tipo.equals(TipoTransaccion.gasto.index) &
+              tbl.fecha.isBetween(Variable(startDate), Variable(endDate))))
+        .get();
+    
+    // ✅ SOLUCIÓN CON BUCLE FOR
+    double totalSpending = 0.0;
+    for (final transaction in transactions) {
+      totalSpending += transaction.cantidad.abs();
+    }
+    return totalSpending;
+  }
+
 
   // --- Métodos de Cálculo de Amortización ---
 
@@ -275,7 +327,8 @@ class FinanceService {
 
       final cuenta = cuentas[i];
       final espacioParaIngresar =
-          (cuenta.saldoMaximoMensual - cuenta.sobranteMesAnterior) -
+          (cuenta.saldoMaximoMensual - cuenta.sobranteMesAnterior)
+                  .clamp(0, double.infinity) -
               cuenta.ingresoAcumuladoMes;
 
       if (espacioParaIngresar > 0) {
@@ -491,18 +544,35 @@ class FinanceService {
   }
 
   Future<void> handleMonthlyReset() async {
-    final hoy = DateTime.now();
-    // Idealmente, guardar la fecha del último reinicio en la BD para no hacerlo varias veces.
-    // Por simplicidad, lo haremos si es el primer día del mes.
-    if (hoy.day == 1) {
-      final cuentas = await _db.cuentasDao.allCuentas;
-      for (final cuenta in cuentas) {
-        final updatedCuenta = cuenta.copyWith(
-          sobranteMesAnterior: cuenta.saldoActual,
-          gastoAcumuladoMes: 0.0,
-          ingresoAcumuladoMes: 0.0,
+    try {
+      final appSettings = await _db.appSettingsDao.getSettings();
+      final now = DateTime.now();
+
+      final lastReset = appSettings.lastResetDate;
+
+      if (lastReset == null ||
+          (lastReset.month != now.month || lastReset.year != now.year)) {
+        final cuentas = await _db.cuentasDao.allCuentas;
+        for (final cuenta in cuentas) {
+          final updatedCuenta = cuenta.copyWith(
+            sobranteMesAnterior: cuenta.saldoActual,
+            gastoAcumuladoMes: 0.0,
+            ingresoAcumuladoMes: 0.0,
+          );
+          await _db.cuentasDao.upsertCuenta(updatedCuenta.toCompanion(false));
+        }
+
+        // Update the last reset date
+        await _db.appSettingsDao.updateSettings(
+          AppSettingsCompanion(lastResetDate: Value(now)),
         );
-        await _db.cuentasDao.upsertCuenta(updatedCuenta.toCompanion(false));
+      }
+    } on SqliteException catch (e) {
+      if (e.message.contains('no such column: last_reset_date')) {
+        Logger()
+            .w('Migration for last_reset_date pending. Skipping monthly reset.');
+      } else {
+        rethrow;
       }
     }
   }
@@ -808,35 +878,15 @@ class FinanceService {
     );
 
     if (gastoSuccess) {
-      final fecha = selectedDate;
-      final ingresoId =
-          await _db.ingresosDao.insertIngreso(IngresosCompanion.insert(
-        cantidadTotal: cantidad,
-        fecha: fecha,
-        idCategoria: categoriaIngreso.id,
-      ));
-
-      await _db.transaccionesDao
-          .insertTransaccion(TransaccionesCompanion.insert(
-        idCuenta: idCuentaDestino,
-        cantidad: cantidad,
-        tipo: TipoTransaccion.ingreso,
-        fecha: fecha,
-        idIngreso: Value(ingresoId),
-      ));
-
-      final cuentaDestino = await _db.cuentasDao.getCuentaById(idCuentaDestino);
-      if (cuentaDestino != null) {
-        final updatedCuentaDestino = cuentaDestino.copyWith(
-          saldoActual: cuentaDestino.saldoActual + cantidad,
-          ingresoAcumuladoMes: cuentaDestino.ingresoAcumuladoMes + cantidad,
-        );
-        await _db.cuentasDao.upsertCuenta(updatedCuentaDestino.toCompanion(false));
-      }
+      await agregarIngreso(
+        cantidad,
+        categoriaIngreso.id,
+        idCuentaDestino,
+        selectedDate,
+      );
     }
 
     return gastoSuccess;
   }
 
-  
 }

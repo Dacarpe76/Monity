@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
@@ -29,7 +31,7 @@ class NotificationService {
         0,
         'Tu impulso Monity del día 🚀',
         quote,
-        _nextInstanceOfSevenAM(),
+        _nextInstanceOfRandomTime(),
         const NotificationDetails(
           android: AndroidNotificationDetails(
               'daily_motivational_quote_channel',
@@ -44,14 +46,37 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime);
   }
 
-  tz.TZDateTime _nextInstanceOfSevenAM() {
+  tz.TZDateTime _nextInstanceOfRandomTime() {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    final random = Random();
+    // Random hour between 8 AM and 8 PM (20h)
+    final randomHour = 8 + random.nextInt(13);
+    final randomMinute = random.nextInt(60);
+
     tz.TZDateTime scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, 7);
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, randomHour, randomMinute);
+
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;
+  }
+
+  Future<void> showTestNotification(String quote) async {
+    await flutterLocalNotificationsPlugin.show(
+        0,
+        'Tu impulso Monity del día 🚀',
+        quote,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+              'daily_motivational_quote_channel',
+              'Daily Motivational Quote',
+              channelDescription: 'Channel for daily motivational quotes',
+              importance: Importance.max,
+              priority: Priority.high,
+              ticker: 'ticker'),
+        ),
+    );
   }
 
   Future<void> sendSavingsNotification(double savingsAmount) async {

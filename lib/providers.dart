@@ -109,7 +109,7 @@ class MotivationalQuotesNotifier extends StateNotifier<bool> {
     if (state) {
       WorkManagerService().registerDailyQuoteTask();
     } else {
-      WorkManagerService().cancelAllTasks();
+      WorkManagerService().cancelDailyQuoteTask();
     }
   }
 }

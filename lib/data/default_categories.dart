@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:monity/data/database.dart';
 
-const List<CategoriasCompanion> defaultIncomeCategories = [
+final List<CategoriasCompanion> defaultIncomeCategories = [
   CategoriasCompanion(
     nombre: Value('Salario / Nómina'),
     tipo: Value(TipoCategoria.ingreso),
@@ -39,7 +39,7 @@ const List<CategoriasCompanion> defaultIncomeCategories = [
   ),
 ];
 
-const List<CategoriasCompanion> defaultExpenseCategories = [
+final List<CategoriasCompanion> defaultExpenseCategories = [
   CategoriasCompanion(
     nombre: Value('Vivienda'),
     tipo: Value(TipoCategoria.gasto),

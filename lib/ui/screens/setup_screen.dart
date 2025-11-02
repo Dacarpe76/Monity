@@ -68,6 +68,7 @@ class SetupScreenState extends ConsumerState<SetupScreen> {
       // Mark setup as complete
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('setup_complete', true);
+      await prefs.setString('setup_mode', 'manual');
 
       // Navigate to home
       if (!mounted) return;
@@ -75,6 +76,51 @@ class SetupScreenState extends ConsumerState<SetupScreen> {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
+  }
+
+  void _finishAutomaticSetup(double monthlyIncome) async {
+    final financeService = ref.read(financeServiceProvider);
+
+    // Update currency setting
+    final settingsDao = ref.read(appSettingsDaoProvider);
+    await settingsDao.updateSettings(AppSettingsCompanion(
+      currency: drift.Value(_selectedCurrency),
+    ));
+
+    // Calculate limits
+    final double gastosPersonalesMax = monthlyIncome * 0.20;
+    final double gastosPersonalesLimite = gastosPersonalesMax * 0.80;
+    final double gastosEsencialesMax = monthlyIncome * 0.70;
+    final double gastosEsencialesLimite = gastosEsencialesMax * 0.80;
+    final double imprevistosMax = monthlyIncome * 3.00;
+    final double imprevistosLimite = imprevistosMax * 0.10;
+    final double emergenciasMax = monthlyIncome * 10.00;
+    final double emergenciasLimite = emergenciasMax * 0.10;
+
+    // Create accounts
+    await financeService.createAccount(
+        'Gastos personales', gastosPersonalesMax, gastosPersonalesLimite);
+    await financeService.createAccount(
+        'Gastos Esenciales', gastosEsencialesMax, gastosEsencialesLimite);
+    await financeService.createAccount(
+        'Imprevistos', imprevistosMax, imprevistosLimite);
+    await financeService.createAccount(
+        'Fondo de emergencias', emergenciasMax, emergenciasLimite);
+    await financeService.createAccount('Objetivos futuros', 9999999, 0);
+
+    // Create categories
+    await financeService.createDefaultCategories();
+
+    // Mark setup as complete
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('setup_complete', true);
+    await prefs.setString('setup_mode', 'auto');
+
+    // Navigate to home
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
   }
 
   @override
@@ -88,6 +134,7 @@ class SetupScreenState extends ConsumerState<SetupScreen> {
           children: [
             _buildCurrencyPage(),
             _buildWelcomePage(),
+            _buildSetupModePage(), // New page
             _buildGastosPersonalesPage(),
             _buildGastosEsencialesPage(),
             _buildSummaryPage(),
@@ -192,13 +239,78 @@ class SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
+  Widget _buildSetupModePage() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text('3. ¿Cómo quieres configurar tus cuentas?',
+              style: Theme.of(context).textTheme.headlineMedium,
+              textAlign: TextAlign.center),
+          const SizedBox(height: 30),
+          ElevatedButton(
+            onPressed: () => _pageController.nextPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.ease,
+            ),
+            child: const Text('Quiero definirlas yo mismo (Manual)'),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () => _showIncomeDialog(),
+            child: const Text('Que Monity lo haga por mí (Automático)'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showIncomeDialog() {
+    final incomeController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Ingreso Mensual'),
+          content: TextField(
+            controller: incomeController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Ingreso mensual total aproximado',
+              prefixText: '€',
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Guardar'),
+              onPressed: () {
+                final monthlyIncome =
+                    double.tryParse(incomeController.text.replaceAll(',', '.'));
+                if (monthlyIncome != null && monthlyIncome > 0) {
+                  Navigator.of(context).pop();
+                  _finishAutomaticSetup(monthlyIncome);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildGastosPersonalesPage() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('3. Gastos Personales',
+          Text('4. Gastos Personales',
               style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 10),
           const Text(
@@ -270,7 +382,7 @@ class SetupScreenState extends ConsumerState<SetupScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('4. Gastos Esenciales',
+          Text('5. Gastos Esenciales',
               style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 10),
           const Text(
@@ -360,7 +472,7 @@ class SetupScreenState extends ConsumerState<SetupScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('5. Resumen de Cuentas',
+            Text('6. Resumen de Cuentas',
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center),
             const SizedBox(height: 20),

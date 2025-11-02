@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/services.dart';
 import 'dart:math';
 
 import 'package:monity/data/default_categories.dart';
@@ -54,6 +55,10 @@ class Cuentas extends Table {
   RealColumn get sobranteMesAnterior =>
       real().withDefault(const Constant(0.0))();
   IntColumn get orden => integer().withDefault(const Constant(999))();
+  RealColumn get adjustmentPercentage =>
+      real().withDefault(const Constant(0.90))();
+  RealColumn get maxBalancePercentage =>
+      real().withDefault(const Constant(1.20))();
 }
 
 @DataClassName('Categoria')
@@ -153,6 +158,9 @@ class AppSettings extends Table {
       boolean().withDefault(const Constant(true))();
   BoolColumn get showProjection =>
       boolean().withDefault(const Constant(true))();
+  DateTimeColumn get lastResetDate => dateTime().nullable()();
+  BoolColumn get monityControlEnabled =>
+      boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -167,6 +175,13 @@ class Quotes extends Table {
 
 // --- DATABASE CLASS ---
 
+@DataClassName('HistorialSaldo')
+class HistorialSaldos extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get fecha => dateTime()();
+  RealColumn get saldo => real()();
+}
+
 @DriftDatabase(tables: [
   Cuentas,
   Categorias,
@@ -177,6 +192,7 @@ class Quotes extends Table {
   Creditos,
   AppSettings,
   Quotes,
+  HistorialSaldos,
 ], daos: [
   CuentasDao,
   CategoriasDao,
@@ -187,12 +203,13 @@ class Quotes extends Table {
   CreditosDao,
   AppSettingsDao,
   QuotesDao,
+  HistorialSaldosDao,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(connect());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -203,6 +220,19 @@ class AppDatabase extends _$AppDatabase {
             batch.insertAll(categorias, defaultExpenseCategories);
           });
           await into(appSettings).insert(AppSettingsCompanion());
+
+          // Cargar y añadir las frases motivadoras
+          final content = await rootBundle.loadString('assets/frases.txt');
+          final allQuotes = content
+              .split(RegExp(r'\r\n\r\n|\n\n'))
+              .where((q) => q.trim().isNotEmpty)
+              .toList();
+          final quotesCompanions = allQuotes
+              .map((q) => QuotesCompanion.insert(quoteText: q.trim()))
+              .toList();
+          await batch((batch) {
+            batch.insertAll(quotes, quotesCompanions);
+          });
         },
         onUpgrade: (m, from, to) async {
           // print('Running migration from $from to $to');
@@ -290,6 +320,51 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 17) {
             await m.createTable(quotes);
+          }
+          if (from < 18) {
+            await m.addColumn(cuentas, cuentas.adjustmentPercentage);
+            await m.addColumn(cuentas, cuentas.maxBalancePercentage);
+          }
+          if (from < 19) {
+            // Cargar y añadir las frases motivadoras si la tabla está vacía
+            final count = await customSelect('SELECT COUNT(*) as c FROM quotes')
+                .getSingle();
+            if (count.read<int>('c') == 0) {
+              final content = await rootBundle.loadString('assets/frases.txt');
+              final allQuotes = content
+                  .split(RegExp(r'\r\n\r\n|\n\n'))
+                  .where((q) => q.trim().isNotEmpty)
+                  .toList();
+              final quotesCompanions = allQuotes
+                  .map((q) => QuotesCompanion.insert(quoteText: q.trim()))
+                  .toList();
+              await batch((batch) {
+                batch.insertAll(quotes, quotesCompanions);
+              });
+            }
+          }
+          if (from < 20) {
+            await m.addColumn(appSettings, appSettings.lastResetDate);
+          }
+          if (from < 21) {
+            await m.createTable(historialSaldos);
+          }
+          if (from < 22) {
+            final cuentasList = await customSelect('SELECT id, adjustment_percentage, max_balance_percentage FROM cuentas').get();
+            for (final cuenta in cuentasList) {
+              final id = cuenta.read<int>('id');
+              final adjustment = cuenta.read<double>('adjustment_percentage');
+              final maxBalance = cuenta.read<double>('max_balance_percentage');
+              await customUpdate(
+                'UPDATE cuentas SET adjustment_percentage = ?, max_balance_percentage = ? WHERE id = ?',
+                variables: [
+                  Variable.withReal(maxBalance),
+                  Variable.withReal(adjustment),
+                  Variable.withInt(id),
+                ],
+                updates: {cuentas},
+              );
+            }
           }
         },
       );
@@ -449,6 +524,9 @@ class CategoriasDao extends DatabaseAccessor<AppDatabase>
       (select(categorias)
             ..where((tbl) => tbl.nombre.equals(name) & tbl.tipo.equals(type)))
           .getSingleOrNull();
+
+  Future<Categoria?> getCategoryById(int id) =>
+      (select(categorias)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
 }
 
 @DriftAccessor(tables: [Ingresos])
@@ -541,6 +619,8 @@ class TransaccionesDao extends DatabaseAccessor<AppDatabase>
   Stream<List<Transaccion>> watchAllTransacciones() =>
       select(transacciones).watch();
   Future<List<Transaccion>> get allTransacciones => select(transacciones).get();
+  Future<Transaccion?> getTransaccionById(int id) =>
+      (select(transacciones)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
   Future<void> deleteTransaccion(int id) {
     return transaction(() async {
       final transactionToDelete = await (select(transacciones)
@@ -759,4 +839,16 @@ class QuotesDao extends DatabaseAccessor<AppDatabase> with _$QuotesDaoMixin {
       batch.insertAll(quotes, newQuotes);
     });
   }
+}
+
+@DriftAccessor(tables: [HistorialSaldos])
+class HistorialSaldosDao extends DatabaseAccessor<AppDatabase>
+    with _$HistorialSaldosDaoMixin {
+  HistorialSaldosDao(super.db);
+
+  Stream<List<HistorialSaldo>> watchAllHistorialSaldos() =>
+      (select(historialSaldos)..orderBy([(t) => OrderingTerm(expression: t.fecha)])).watch();
+
+  Future<void> insertHistorialSaldo(HistorialSaldosCompanion historialSaldo) =>
+      into(historialSaldos).insert(historialSaldo);
 }
