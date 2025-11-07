@@ -51,6 +51,7 @@ dependencies:
 
   # UI & Features
   cupertino_icons: ^1.0.8
+  image_picker: ^1.1.2
   shared_preferences: ^2.2.3
   flutter_colorpicker: ^1.1.0
   syncfusion_flutter_charts: ^31.1.22

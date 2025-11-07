@@ -42,6 +42,11 @@ final appSettingsDaoProvider = Provider<AppSettingsDao>((ref) {
   return db.appSettingsDao;
 });
 
+final premiosDaoProvider = Provider<PremiosDao>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.premiosDao;
+});
+
 
 
 // Provider para el servicio de finanzas

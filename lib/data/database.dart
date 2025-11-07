@@ -175,6 +175,16 @@ class Quotes extends Table {
 
 // --- DATABASE CLASS ---
 
+@DataClassName('Premio')
+class Premios extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get nombre => text().withLength(min: 1, max: 50)();
+  RealColumn get importe => real()();
+  RealColumn get acumulado => real().withDefault(const Constant(0.0))();
+  TextColumn get fotoPath => text()();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
+}
+
 @DataClassName('HistorialSaldo')
 class HistorialSaldos extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -193,6 +203,7 @@ class HistorialSaldos extends Table {
   AppSettings,
   Quotes,
   HistorialSaldos,
+  Premios,
 ], daos: [
   CuentasDao,
   CategoriasDao,
@@ -204,12 +215,13 @@ class HistorialSaldos extends Table {
   AppSettingsDao,
   QuotesDao,
   HistorialSaldosDao,
+  PremiosDao,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(connect());
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -366,6 +378,9 @@ class AppDatabase extends _$AppDatabase {
               );
             }
           }
+          if (from < 23) {
+            await m.createTable(premios);
+          }
         },
       );
 
@@ -392,6 +407,18 @@ class AppDatabase extends _$AppDatabase {
 }
 
 // --- DAOs ---
+
+@DriftAccessor(tables: [Premios])
+class PremiosDao extends DatabaseAccessor<AppDatabase> with _$PremiosDaoMixin {
+  PremiosDao(super.db);
+
+  Future<void> upsertPremio(PremiosCompanion premio) =>
+      into(premios).insertOnConflictUpdate(premio);
+  Stream<Premio?> watchActivePremio() =>
+      (select(premios)..where((p) => p.isCompleted.equals(false))).watchSingleOrNull();
+  Future<Premio?> getActivePremio() =>
+      (select(premios)..where((p) => p.isCompleted.equals(false))).getSingleOrNull();
+}
 
 @DriftAccessor(tables: [Creditos])
 class CreditosDao extends DatabaseAccessor<AppDatabase>

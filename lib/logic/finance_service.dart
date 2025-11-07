@@ -315,6 +315,21 @@ class FinanceService {
     final cuentas = await _db.cuentasDao.allCuentas;
     var cantidadRestante = cantidadTotal;
 
+    try {
+      final imprevistosAccount = cuentas.firstWhere((c) => c.nombre == 'Imprevistos');
+      if (selectedAccountId == imprevistosAccount.id) {
+        final activePrize = await _db.premiosDao.getActivePremio();
+        if (activePrize != null) {
+          final prizeAmount = cantidadTotal * 0.20;
+          final newAcumulado = activePrize.acumulado + prizeAmount;
+          await _db.premiosDao.upsertPremio(activePrize.copyWith(acumulado: newAcumulado).toCompanion(true));
+          cantidadRestante -= prizeAmount;
+        }
+      }
+    } catch (e) {
+      // Imprevistos account not found, do nothing
+    }
+
     // Find the starting account based on selectedAccountId
     final startIndex = cuentas.indexWhere((c) => c.id == selectedAccountId);
     if (startIndex == -1) {

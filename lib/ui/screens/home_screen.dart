@@ -11,6 +11,7 @@ import 'package:monity/ui/screens/manual_screen.dart'; // Import the new manual 
 import 'package:monity/ui/screens/setup_screen.dart';
 import 'package:monity/ui/widgets/account_card.dart';
 import 'package:monity/ui/screens/daily_balance_chart_screen.dart';
+import 'package:monity/ui/screens/prize_screen.dart';
 
 
 
@@ -105,6 +106,16 @@ class HomeScreen extends ConsumerWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (context) => const SettingsScreen()),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.emoji_events),
+                    tooltip: 'Premios',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => const PrizeScreen()),
                       );
                     },
                   ),

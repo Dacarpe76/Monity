@@ -81,7 +81,7 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
       GeneratedColumn<double>('adjustment_percentage', aliasedName, false,
           type: DriftSqlType.double,
           requiredDuringInsert: false,
-          defaultValue: const Constant(1.20));
+          defaultValue: const Constant(0.90));
   static const VerificationMeta _maxBalancePercentageMeta =
       const VerificationMeta('maxBalancePercentage');
   @override
@@ -89,7 +89,7 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
       GeneratedColumn<double>('max_balance_percentage', aliasedName, false,
           type: DriftSqlType.double,
           requiredDuringInsert: false,
-          defaultValue: const Constant(0.90));
+          defaultValue: const Constant(1.20));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -4196,6 +4196,347 @@ class HistorialSaldosCompanion extends UpdateCompanion<HistorialSaldo> {
   }
 }
 
+class $PremiosTable extends Premios with TableInfo<$PremiosTable, Premio> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PremiosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+      'nombre', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 50),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _importeMeta =
+      const VerificationMeta('importe');
+  @override
+  late final GeneratedColumn<double> importe = GeneratedColumn<double>(
+      'importe', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _acumuladoMeta =
+      const VerificationMeta('acumulado');
+  @override
+  late final GeneratedColumn<double> acumulado = GeneratedColumn<double>(
+      'acumulado', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.0));
+  static const VerificationMeta _fotoPathMeta =
+      const VerificationMeta('fotoPath');
+  @override
+  late final GeneratedColumn<String> fotoPath = GeneratedColumn<String>(
+      'foto_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _isCompletedMeta =
+      const VerificationMeta('isCompleted');
+  @override
+  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
+      'is_completed', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_completed" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, nombre, importe, acumulado, fotoPath, isCompleted];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'premios';
+  @override
+  VerificationContext validateIntegrity(Insertable<Premio> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(_nombreMeta,
+          nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta));
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('importe')) {
+      context.handle(_importeMeta,
+          importe.isAcceptableOrUnknown(data['importe']!, _importeMeta));
+    } else if (isInserting) {
+      context.missing(_importeMeta);
+    }
+    if (data.containsKey('acumulado')) {
+      context.handle(_acumuladoMeta,
+          acumulado.isAcceptableOrUnknown(data['acumulado']!, _acumuladoMeta));
+    }
+    if (data.containsKey('foto_path')) {
+      context.handle(_fotoPathMeta,
+          fotoPath.isAcceptableOrUnknown(data['foto_path']!, _fotoPathMeta));
+    } else if (isInserting) {
+      context.missing(_fotoPathMeta);
+    }
+    if (data.containsKey('is_completed')) {
+      context.handle(
+          _isCompletedMeta,
+          isCompleted.isAcceptableOrUnknown(
+              data['is_completed']!, _isCompletedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Premio map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Premio(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      nombre: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nombre'])!,
+      importe: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}importe'])!,
+      acumulado: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}acumulado'])!,
+      fotoPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}foto_path'])!,
+      isCompleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_completed'])!,
+    );
+  }
+
+  @override
+  $PremiosTable createAlias(String alias) {
+    return $PremiosTable(attachedDatabase, alias);
+  }
+}
+
+class Premio extends DataClass implements Insertable<Premio> {
+  final int id;
+  final String nombre;
+  final double importe;
+  final double acumulado;
+  final String fotoPath;
+  final bool isCompleted;
+  const Premio(
+      {required this.id,
+      required this.nombre,
+      required this.importe,
+      required this.acumulado,
+      required this.fotoPath,
+      required this.isCompleted});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['nombre'] = Variable<String>(nombre);
+    map['importe'] = Variable<double>(importe);
+    map['acumulado'] = Variable<double>(acumulado);
+    map['foto_path'] = Variable<String>(fotoPath);
+    map['is_completed'] = Variable<bool>(isCompleted);
+    return map;
+  }
+
+  PremiosCompanion toCompanion(bool nullToAbsent) {
+    return PremiosCompanion(
+      id: Value(id),
+      nombre: Value(nombre),
+      importe: Value(importe),
+      acumulado: Value(acumulado),
+      fotoPath: Value(fotoPath),
+      isCompleted: Value(isCompleted),
+    );
+  }
+
+  factory Premio.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Premio(
+      id: serializer.fromJson<int>(json['id']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      importe: serializer.fromJson<double>(json['importe']),
+      acumulado: serializer.fromJson<double>(json['acumulado']),
+      fotoPath: serializer.fromJson<String>(json['fotoPath']),
+      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'nombre': serializer.toJson<String>(nombre),
+      'importe': serializer.toJson<double>(importe),
+      'acumulado': serializer.toJson<double>(acumulado),
+      'fotoPath': serializer.toJson<String>(fotoPath),
+      'isCompleted': serializer.toJson<bool>(isCompleted),
+    };
+  }
+
+  Premio copyWith(
+          {int? id,
+          String? nombre,
+          double? importe,
+          double? acumulado,
+          String? fotoPath,
+          bool? isCompleted}) =>
+      Premio(
+        id: id ?? this.id,
+        nombre: nombre ?? this.nombre,
+        importe: importe ?? this.importe,
+        acumulado: acumulado ?? this.acumulado,
+        fotoPath: fotoPath ?? this.fotoPath,
+        isCompleted: isCompleted ?? this.isCompleted,
+      );
+  Premio copyWithCompanion(PremiosCompanion data) {
+    return Premio(
+      id: data.id.present ? data.id.value : this.id,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      importe: data.importe.present ? data.importe.value : this.importe,
+      acumulado: data.acumulado.present ? data.acumulado.value : this.acumulado,
+      fotoPath: data.fotoPath.present ? data.fotoPath.value : this.fotoPath,
+      isCompleted:
+          data.isCompleted.present ? data.isCompleted.value : this.isCompleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Premio(')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('importe: $importe, ')
+          ..write('acumulado: $acumulado, ')
+          ..write('fotoPath: $fotoPath, ')
+          ..write('isCompleted: $isCompleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, nombre, importe, acumulado, fotoPath, isCompleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Premio &&
+          other.id == this.id &&
+          other.nombre == this.nombre &&
+          other.importe == this.importe &&
+          other.acumulado == this.acumulado &&
+          other.fotoPath == this.fotoPath &&
+          other.isCompleted == this.isCompleted);
+}
+
+class PremiosCompanion extends UpdateCompanion<Premio> {
+  final Value<int> id;
+  final Value<String> nombre;
+  final Value<double> importe;
+  final Value<double> acumulado;
+  final Value<String> fotoPath;
+  final Value<bool> isCompleted;
+  const PremiosCompanion({
+    this.id = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.importe = const Value.absent(),
+    this.acumulado = const Value.absent(),
+    this.fotoPath = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+  });
+  PremiosCompanion.insert({
+    this.id = const Value.absent(),
+    required String nombre,
+    required double importe,
+    this.acumulado = const Value.absent(),
+    required String fotoPath,
+    this.isCompleted = const Value.absent(),
+  })  : nombre = Value(nombre),
+        importe = Value(importe),
+        fotoPath = Value(fotoPath);
+  static Insertable<Premio> custom({
+    Expression<int>? id,
+    Expression<String>? nombre,
+    Expression<double>? importe,
+    Expression<double>? acumulado,
+    Expression<String>? fotoPath,
+    Expression<bool>? isCompleted,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (nombre != null) 'nombre': nombre,
+      if (importe != null) 'importe': importe,
+      if (acumulado != null) 'acumulado': acumulado,
+      if (fotoPath != null) 'foto_path': fotoPath,
+      if (isCompleted != null) 'is_completed': isCompleted,
+    });
+  }
+
+  PremiosCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? nombre,
+      Value<double>? importe,
+      Value<double>? acumulado,
+      Value<String>? fotoPath,
+      Value<bool>? isCompleted}) {
+    return PremiosCompanion(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      importe: importe ?? this.importe,
+      acumulado: acumulado ?? this.acumulado,
+      fotoPath: fotoPath ?? this.fotoPath,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (importe.present) {
+      map['importe'] = Variable<double>(importe.value);
+    }
+    if (acumulado.present) {
+      map['acumulado'] = Variable<double>(acumulado.value);
+    }
+    if (fotoPath.present) {
+      map['foto_path'] = Variable<String>(fotoPath.value);
+    }
+    if (isCompleted.present) {
+      map['is_completed'] = Variable<bool>(isCompleted.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PremiosCompanion(')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('importe: $importe, ')
+          ..write('acumulado: $acumulado, ')
+          ..write('fotoPath: $fotoPath, ')
+          ..write('isCompleted: $isCompleted')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4211,6 +4552,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $QuotesTable quotes = $QuotesTable(this);
   late final $HistorialSaldosTable historialSaldos =
       $HistorialSaldosTable(this);
+  late final $PremiosTable premios = $PremiosTable(this);
   late final CuentasDao cuentasDao = CuentasDao(this as AppDatabase);
   late final CategoriasDao categoriasDao = CategoriasDao(this as AppDatabase);
   late final IngresosDao ingresosDao = IngresosDao(this as AppDatabase);
@@ -4225,6 +4567,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final QuotesDao quotesDao = QuotesDao(this as AppDatabase);
   late final HistorialSaldosDao historialSaldosDao =
       HistorialSaldosDao(this as AppDatabase);
+  late final PremiosDao premiosDao = PremiosDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4239,7 +4582,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         creditos,
         appSettings,
         quotes,
-        historialSaldos
+        historialSaldos,
+        premios
       ];
 }
 
@@ -7845,6 +8189,180 @@ typedef $$HistorialSaldosTableProcessedTableManager = ProcessedTableManager<
     ),
     HistorialSaldo,
     PrefetchHooks Function()>;
+typedef $$PremiosTableCreateCompanionBuilder = PremiosCompanion Function({
+  Value<int> id,
+  required String nombre,
+  required double importe,
+  Value<double> acumulado,
+  required String fotoPath,
+  Value<bool> isCompleted,
+});
+typedef $$PremiosTableUpdateCompanionBuilder = PremiosCompanion Function({
+  Value<int> id,
+  Value<String> nombre,
+  Value<double> importe,
+  Value<double> acumulado,
+  Value<String> fotoPath,
+  Value<bool> isCompleted,
+});
+
+class $$PremiosTableFilterComposer
+    extends Composer<_$AppDatabase, $PremiosTable> {
+  $$PremiosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get importe => $composableBuilder(
+      column: $table.importe, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get acumulado => $composableBuilder(
+      column: $table.acumulado, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fotoPath => $composableBuilder(
+      column: $table.fotoPath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isCompleted => $composableBuilder(
+      column: $table.isCompleted, builder: (column) => ColumnFilters(column));
+}
+
+class $$PremiosTableOrderingComposer
+    extends Composer<_$AppDatabase, $PremiosTable> {
+  $$PremiosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get importe => $composableBuilder(
+      column: $table.importe, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get acumulado => $composableBuilder(
+      column: $table.acumulado, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fotoPath => $composableBuilder(
+      column: $table.fotoPath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isCompleted => $composableBuilder(
+      column: $table.isCompleted, builder: (column) => ColumnOrderings(column));
+}
+
+class $$PremiosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PremiosTable> {
+  $$PremiosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<double> get importe =>
+      $composableBuilder(column: $table.importe, builder: (column) => column);
+
+  GeneratedColumn<double> get acumulado =>
+      $composableBuilder(column: $table.acumulado, builder: (column) => column);
+
+  GeneratedColumn<String> get fotoPath =>
+      $composableBuilder(column: $table.fotoPath, builder: (column) => column);
+
+  GeneratedColumn<bool> get isCompleted => $composableBuilder(
+      column: $table.isCompleted, builder: (column) => column);
+}
+
+class $$PremiosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $PremiosTable,
+    Premio,
+    $$PremiosTableFilterComposer,
+    $$PremiosTableOrderingComposer,
+    $$PremiosTableAnnotationComposer,
+    $$PremiosTableCreateCompanionBuilder,
+    $$PremiosTableUpdateCompanionBuilder,
+    (Premio, BaseReferences<_$AppDatabase, $PremiosTable, Premio>),
+    Premio,
+    PrefetchHooks Function()> {
+  $$PremiosTableTableManager(_$AppDatabase db, $PremiosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PremiosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PremiosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PremiosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> nombre = const Value.absent(),
+            Value<double> importe = const Value.absent(),
+            Value<double> acumulado = const Value.absent(),
+            Value<String> fotoPath = const Value.absent(),
+            Value<bool> isCompleted = const Value.absent(),
+          }) =>
+              PremiosCompanion(
+            id: id,
+            nombre: nombre,
+            importe: importe,
+            acumulado: acumulado,
+            fotoPath: fotoPath,
+            isCompleted: isCompleted,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String nombre,
+            required double importe,
+            Value<double> acumulado = const Value.absent(),
+            required String fotoPath,
+            Value<bool> isCompleted = const Value.absent(),
+          }) =>
+              PremiosCompanion.insert(
+            id: id,
+            nombre: nombre,
+            importe: importe,
+            acumulado: acumulado,
+            fotoPath: fotoPath,
+            isCompleted: isCompleted,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$PremiosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $PremiosTable,
+    Premio,
+    $$PremiosTableFilterComposer,
+    $$PremiosTableOrderingComposer,
+    $$PremiosTableAnnotationComposer,
+    $$PremiosTableCreateCompanionBuilder,
+    $$PremiosTableUpdateCompanionBuilder,
+    (Premio, BaseReferences<_$AppDatabase, $PremiosTable, Premio>),
+    Premio,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7870,6 +8388,8 @@ class $AppDatabaseManager {
       $$QuotesTableTableManager(_db, _db.quotes);
   $$HistorialSaldosTableTableManager get historialSaldos =>
       $$HistorialSaldosTableTableManager(_db, _db.historialSaldos);
+  $$PremiosTableTableManager get premios =>
+      $$PremiosTableTableManager(_db, _db.premios);
 }
 
 mixin _$CuentasDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -7911,4 +8431,7 @@ mixin _$QuotesDaoMixin on DatabaseAccessor<AppDatabase> {
 }
 mixin _$HistorialSaldosDaoMixin on DatabaseAccessor<AppDatabase> {
   $HistorialSaldosTable get historialSaldos => attachedDatabase.historialSaldos;
+}
+mixin _$PremiosDaoMixin on DatabaseAccessor<AppDatabase> {
+  $PremiosTable get premios => attachedDatabase.premios;
 }
